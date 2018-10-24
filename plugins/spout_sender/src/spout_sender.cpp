@@ -12,6 +12,8 @@
 #include "mmcore/versioninfo.h"
 #include "vislib/vislibversion.h"
 
+#include "SpoutSenderRenderer.h"
+
 
 /* anonymous namespace hides this type from any other object files */
 namespace {
@@ -42,7 +44,7 @@ namespace {
             //
             // TODO: Register your plugin's modules here
             // like:
-            //   this->module_descriptions.RegisterAutoDescription<megamol::spout_sender::MyModule1>();
+            this->module_descriptions.RegisterAutoDescription<megamol::spout_sender::SpoutSenderRenderer>();
             //   this->module_descriptions.RegisterAutoDescription<megamol::spout_sender::MyModule2>();
             //   ...
             //
