@@ -17,6 +17,8 @@
 #include "mmcore/view/AbstractCallRender3D.h"
 #include "mmcore/param/ParamSlot.h"
 
+#include "Spout.h"
+
 namespace megamol {
 	namespace spout_sender {
 
@@ -46,7 +48,7 @@ namespace megamol {
 			*/
 			static const char *Description(void)
 			{
-				return "Locally forwards rendered images via Spout for usage in other applications.";
+				return "Forwards textures via Spout for usage in other applications.";
 			}
 
 			/**
@@ -114,27 +116,36 @@ namespace megamol {
 			* variables
 			**********************************************************************/
 
-			bool toggleSpoutSenderRendering;
+			bool m_toggleSpoutSending;
+			SpoutSender m_sender;
+			std::string m_senderName;
+			GLuint m_texture;
+			unsigned int m_textureWidth, m_textureHeight;
 
 			/**********************************************************************
 			* functions
 			**********************************************************************/
 
 			/** */
-			//void drawBoundingBox(void);
+			bool isNewTextureSize(const GLint width, const GLint height);
+			void updateTextureDimensions();
+			void initTexture(const unsigned int width, const unsigned int height);
+			void destroyTexture();
+			void copyTexture();
+			void sendTexture();
 
 			/**********************************************************************
 			* callback stuff
 			**********************************************************************/
 
 			/** The renderer caller slot */
-			core::CallerSlot rendererCallerSlot;
+			core::CallerSlot m_rendererCallerSlot;
 
 			/**********************************************************************
 			* parameters
 			**********************************************************************/
 
-			core::param::ParamSlot toggleSpoutSenderRenderingParam;
+			core::param::ParamSlot m_toggleSpoutSendingParam;
 		};
 
 

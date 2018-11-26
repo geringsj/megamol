@@ -11,22 +11,28 @@ if(BUILD_${EXPORT_NAME}_PLUGIN)
 
   # Check option dependencies: First list item is always the current build option,
   # afterwards list the dependencies.
-  set(DEP_LIST "${DEP_LIST};BUILD_${EXPORT_NAME}_PLUGIN BUILD_CORE" CACHE INTERNAL "")
+  set(DEP_LIST "${DEP_LIST};BUILD_${EXPORT_NAME}_PLUGIN BUILD_CORE BUILD_VISLIB" CACHE INTERNAL "")
 
   file(GLOB_RECURSE public_header_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "include/*.h")
   file(GLOB_RECURSE source_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "src/*.cpp")
   file(GLOB_RECURSE header_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "src/*.h")
   #file(GLOB_RECURSE shader_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "Shaders/*")
+  
+  file(GLOB_RECURSE spout_source_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "SpoutSDK/*.cpp")
+  file(GLOB_RECURSE spout_header_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "SpoutSDK/*.h")
+
+  add_subdirectory(oscpack)
 
   # Target definition
-  #add_library(${PROJECT_NAME} SHARED ${public_header_files} ${header_files} ${shader_files} ${source_files})
-  add_library(${PROJECT_NAME} SHARED ${public_header_files} ${header_files} ${source_files})
+  add_library(${PROJECT_NAME} SHARED ${public_header_files} ${header_files} ${source_files} ${spout_source_files} ${spout_header_files})# ${oscpack_source_files} ${oscpack_header_files})
   set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".mmplg")
   target_compile_definitions(${PROJECT_NAME} PRIVATE ${EXPORT_NAME}_EXPORTS)
   target_include_directories(${PROJECT_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    "include" "src")
-  target_link_libraries(${PROJECT_NAME} PRIVATE core)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  "include" "src" "SpoutSDK")
+  target_link_libraries(${PROJECT_NAME} PRIVATE core oscpack)
+
+  set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
+
 
   # Installation rules for generated files
   install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION "include")
@@ -44,5 +50,6 @@ if(BUILD_${EXPORT_NAME}_PLUGIN)
   source_group("Public Header Files" FILES ${public_header_files})
   source_group("Header Files" FILES ${header_files})
   source_group("Source Files" FILES ${source_files})
+  source_group("SpoutSDK Files" FILES ${spout_source_files} ${spout_header_files})
   #source_group("Shaders" FILES ${shader_files})
 endif()

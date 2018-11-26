@@ -29,17 +29,20 @@ using namespace vislib;
 */
 SpoutSenderRenderer::SpoutSenderRenderer(void) 
 	: Renderer3DModule()
-	, rendererCallerSlot("renderer", "outgoing renderer")
-	//, replacementRenderingParam("01_replacementRendering", "Show/hide replacement rendering for the model.")
-	, toggleSpoutSenderRenderingParam("02_toggleSpoutSender", "Toggle sending via spout rendering.")
-	//, replacementKeyParam("03_replacmentKeyAssign", "Assign a key to replacement rendering button.")
-	//, alphaParam("04_alpha", "The alpha value of the replacement rendering.")
+	, m_toggleSpoutSending(true)
+	, m_sender()
+	, m_senderName()
+	, m_texture(0)
+	, m_textureWidth(1), m_textureHeight(1)
+	, m_rendererCallerSlot("renderer", "outgoing renderer")
+	, m_toggleSpoutSendingParam("01_toggleSpoutSender", "Toggle sending texture via Spout.")
 {
 	// init variables
-	this->toggleSpoutSenderRendering = false;
+	this->m_rendererCallerSlot.SetCompatibleCall<view::CallRender3DDescription>();
+	this->MakeSlotAvailable(&this->m_rendererCallerSlot);
 
-	this->rendererCallerSlot.SetCompatibleCall<view::CallRender3DDescription>();
-	this->MakeSlotAvailable(&this->rendererCallerSlot);
+	this->m_toggleSpoutSendingParam.SetParameter(new param::BoolParam(this->m_toggleSpoutSending));
+	this->MakeSlotAvailable(&this->m_toggleSpoutSendingParam);
 }
 
 /*
@@ -53,13 +56,19 @@ SpoutSenderRenderer::~SpoutSenderRenderer(void) {
 * SpoutSenderRenderer::release
 */
 void SpoutSenderRenderer::release(void) {
-
+	m_sender.ReleaseSender();
 }
 
 /*
 * SpoutSenderRenderer::create
 */
 bool SpoutSenderRenderer::create(void) {
+	m_senderName = "SpoutSender_MegaMol_Mono";
+	m_senderName.resize(256, '\0');
+	
+	if (!m_sender.CreateSender(m_senderName.c_str(), m_textureWidth, m_textureHeight)) {
+		// TODO sender creation failed ??
+	}
 
 	return true;
 }
@@ -67,13 +76,13 @@ bool SpoutSenderRenderer::create(void) {
 /*
 * SpoutSenderRenderer::GetCapabilities
 */
-bool SpoutSenderRenderer::GetCapabilities(Call& call) {
+bool SpoutSenderRenderer::GetCapabilities(Call& call) { 
 
 	view::CallRender3D *cr3d_in = dynamic_cast<view::CallRender3D*>(&call);
 	if (cr3d_in == nullptr) return false;
 
 	// Propagate changes made in GetCapabilities() from outgoing CallRender3D (cr3d_out) to incoming CallRender3D (cr3d_in).
-	view::CallRender3D *cr3d_out = this->rendererCallerSlot.CallAs<view::CallRender3D>();
+	view::CallRender3D *cr3d_out = this->m_rendererCallerSlot.CallAs<view::CallRender3D>();
 	if ((cr3d_out != nullptr) && (*cr3d_out)(2)) {
 		cr3d_in->AddCapability(cr3d_out->GetCapabilities());
 	}
@@ -92,8 +101,8 @@ bool SpoutSenderRenderer::GetExtents(Call& call) {
 	if (cr3d_in == nullptr) return false;
 
 	// Propagate changes made in GetExtents() from outgoing CallRender3D (cr3d_out) to incoming  CallRender3D (cr3d_in).
-	view::CallRender3D *cr3d_out = this->rendererCallerSlot.CallAs<view::CallRender3D>();
-	if ((cr3d_out != nullptr) && (*cr3d_out)(1)) {
+	view::CallRender3D *cr3d_out = this->m_rendererCallerSlot.CallAs<view::CallRender3D>();
+	if ((cr3d_out != nullptr) && (*cr3d_out)(core::view::AbstractCallRender::FnGetExtents)) {
 		unsigned int timeFramesCount = cr3d_out->TimeFramesCount();
 		cr3d_in->SetTimeFramesCount((timeFramesCount > 0) ? (timeFramesCount) : (1));
 		cr3d_in->SetTime(cr3d_out->Time());
@@ -115,99 +124,83 @@ bool SpoutSenderRenderer::Render(Call& call) {
 	if (cr3d_in == nullptr)  return false;
 
 	// Update parameters
-	if (this->toggleSpoutSenderRenderingParam.IsDirty()) {
-		this->toggleSpoutSenderRenderingParam.ResetDirty();
+	if (this->m_toggleSpoutSendingParam.IsDirty()) {
+		this->m_toggleSpoutSendingParam.ResetDirty();
 
-		this->toggleSpoutSenderRendering = !this->toggleSpoutSenderRendering;
-		this->toggleSpoutSenderRenderingParam.Param<param::BoolParam>()->SetValue(this->toggleSpoutSenderRendering, false);
+		this->m_toggleSpoutSending = !this->m_toggleSpoutSending;
+		this->m_toggleSpoutSendingParam.Param<param::BoolParam>()->SetValue(this->m_toggleSpoutSending, false);
 	}
 
 	// Call render function of slave renderer
-	view::CallRender3D *cr3d_out = this->rendererCallerSlot.CallAs<view::CallRender3D>();
+	view::CallRender3D *cr3d_out = this->m_rendererCallerSlot.CallAs<view::CallRender3D>();
 	if (cr3d_out != nullptr) {
 		*cr3d_out = *cr3d_in;
-		(*cr3d_out)(0);
+		(*cr3d_out)(core::view::AbstractCallRender::FnRender);
 	}
 
 	// send fbo texture via spout
-	if (this->toggleSpoutSenderRendering) {
-
-		//// Set opengl states
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		//glDisable(GL_LIGHTING);
-		//glEnable(GL_DEPTH_TEST);
-		//glEnable(GL_BLEND);
-		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		//// Draw bounding box
-		//glEnable(GL_CULL_FACE);
-		//glCullFace(GL_FRONT);
-		//this->drawBoundingBox();
-		//glCullFace(GL_BACK);
-		//this->drawBoundingBox();
-		//glDisable(GL_CULL_FACE);
-
-		//// Reset opengl states
-		//glDisable(GL_BLEND);
+	if (this->m_toggleSpoutSending) {
+		this->updateTextureDimensions();
+		this->copyTexture();
+		this->sendTexture();
 	}
 
 	return true;
 }
 
 
-/*
-* ReplacementRenderer::drawBoundingBox
-*/
-//void ReplacementRenderer::drawBoundingBox() {
-//
-//	float alpha = alphaParam.Param<param::FloatParam>()->Value();
-//
-//	glBegin(GL_QUADS);
-//
-//	glEdgeFlag(true);
-//
-//	//glColor4f(0.5f, 0.5f, 0.5f, alpha);
-//	glColor4f(0.0f, 0.0f, 0.25f, alpha);
-//	glVertex3f(this->bbox.Left(), this->bbox.Bottom(), this->bbox.Back());
-//	glVertex3f(this->bbox.Left(), this->bbox.Top(), this->bbox.Back());
-//	glVertex3f(this->bbox.Right(), this->bbox.Top(), this->bbox.Back());
-//	glVertex3f(this->bbox.Right(), this->bbox.Bottom(), this->bbox.Back());
-//
-//	//glColor4f(0.5f, 0.5f, 0.5f, alpha);
-//	glColor4f(0.0f, 0.0f, 0.75f, alpha);
-//	glVertex3f(this->bbox.Left(), this->bbox.Bottom(), this->bbox.Front());
-//	glVertex3f(this->bbox.Right(), this->bbox.Bottom(), this->bbox.Front());
-//	glVertex3f(this->bbox.Right(), this->bbox.Top(), this->bbox.Front());
-//	glVertex3f(this->bbox.Left(), this->bbox.Top(), this->bbox.Front());
-//
-//	//glColor4f(0.75f, 0.75f, 0.75f, alpha);
-//	glColor4f(0.0f, 0.75f, 0.0f, alpha);
-//	glVertex3f(this->bbox.Left(), this->bbox.Top(), this->bbox.Back());
-//	glVertex3f(this->bbox.Left(), this->bbox.Top(), this->bbox.Front());
-//	glVertex3f(this->bbox.Right(), this->bbox.Top(), this->bbox.Front());
-//	glVertex3f(this->bbox.Right(), this->bbox.Top(), this->bbox.Back());
-//
-//	//glColor4f(0.75f, 0.75f, 0.75f, alpha);
-//	glColor4f(0.0f, 0.25f, 0.0f, alpha);
-//	glVertex3f(this->bbox.Left(), this->bbox.Bottom(), this->bbox.Back());
-//	glVertex3f(this->bbox.Right(), this->bbox.Bottom(), this->bbox.Back());
-//	glVertex3f(this->bbox.Right(), this->bbox.Bottom(), this->bbox.Front());
-//	glVertex3f(this->bbox.Left(), this->bbox.Bottom(), this->bbox.Front());
-//
-//	//glColor4f(0.25f, 0.25f, 0.25f, alpha);
-//	glColor4f(0.25f, 0.0f, 0.0f, alpha);
-//	glVertex3f(this->bbox.Left(), this->bbox.Bottom(), this->bbox.Back());
-//	glVertex3f(this->bbox.Left(), this->bbox.Bottom(), this->bbox.Front());
-//	glVertex3f(this->bbox.Left(), this->bbox.Top(), this->bbox.Front());
-//	glVertex3f(this->bbox.Left(), this->bbox.Top(), this->bbox.Back());
-//
-//	//glColor4f(0.25f, 0.25f, 0.25f, alpha);
-//	glColor4f(0.75f, 0.0f, 0.0f, alpha);
-//	glVertex3f(this->bbox.Right(), this->bbox.Bottom(), this->bbox.Back());
-//	glVertex3f(this->bbox.Right(), this->bbox.Top(), this->bbox.Back());
-//	glVertex3f(this->bbox.Right(), this->bbox.Top(), this->bbox.Front());
-//	glVertex3f(this->bbox.Right(), this->bbox.Bottom(), this->bbox.Front());
-//
-//	glEnd();
-//
-//}
+bool SpoutSenderRenderer::isNewTextureSize(const GLint width, const GLint height) {
+	return 
+		m_textureWidth != static_cast<unsigned int>(width)
+		|| m_textureHeight != static_cast<unsigned int>(height);
+}
+
+void SpoutSenderRenderer::updateTextureDimensions() {
+	// check FBO size
+	GLint dims[4] = { 0 };
+	glGetIntegerv(GL_VIEWPORT, dims);
+	GLint fbWidth = dims[2]; GLint fbHeight = dims[3];
+
+	if (this->isNewTextureSize(fbWidth, fbHeight))
+	{
+		m_textureWidth = static_cast<unsigned int>(fbWidth);
+		m_textureHeight = static_cast<unsigned int>(fbHeight);
+
+		this->initTexture(m_textureWidth, m_textureHeight);
+
+		m_sender.UpdateSender(m_senderName.c_str(), m_textureWidth, m_textureHeight);
+	}
+}
+
+void SpoutSenderRenderer::copyTexture() {
+	glReadBuffer(GL_BACK);
+	glCopyTextureSubImage2D(m_texture, 0 /*lvl*/, 0, 0/*x, y texture offset*/, 0, 0 /*window coords offset*/, m_textureWidth, m_textureHeight);
+	std::cout << "SPOUT_SENDER w=" << m_textureWidth << ", h=" << m_textureHeight << std::endl;
+}
+
+
+void SpoutSenderRenderer::sendTexture() {
+	m_sender.SendTexture(m_texture, GL_TEXTURE_2D, m_textureWidth, m_textureHeight);
+}
+
+void SpoutSenderRenderer::initTexture(const unsigned int width, const unsigned int height) {
+	if (m_texture == 0)
+		glGenTextures(1, &m_texture);
+
+	GLenum format = GL_RGBA;
+	GLint oldTexture = 0;
+
+	//glActiveTexture(GL_TEXTURE0);
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldTexture);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, static_cast<GLsizei>(width), static_cast<GLsizei>(height), 0, format, GL_UNSIGNED_BYTE, NULL);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, oldTexture);
+}
+
+void SpoutSenderRenderer::destroyTexture() {
+	glDeleteTextures(1, &m_texture);
+}
