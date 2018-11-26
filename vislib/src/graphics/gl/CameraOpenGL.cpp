@@ -177,6 +177,22 @@ void vislib::graphics::gl::CameraOpenGL::ViewMatrix(float *mat) const {
     matrix.SetAt(0, 3, -xAxis.Dot(eye));
     matrix.SetAt(1, 3, -yAxis.Dot(eye));
     matrix.SetAt(2, 3, -zAxis.Dot(eye));
+
+	// build scale matrix
+	float scaleMat[16] = { 0.0f };
+    math::ShallowMatrix<float, 4, math::COLUMN_MAJOR> scaleMatrix(scaleMat);
+    scaleMatrix.SetAt(0, 0, this->uniformScaleFacor);
+    scaleMatrix.SetAt(1, 1, this->uniformScaleFacor);
+    scaleMatrix.SetAt(2, 2, this->uniformScaleFacor);
+    scaleMatrix.SetAt(3, 3, 1.0f);
+
+	// multiply scaling to the right of view matrix
+	float result[16] = { 0.0f };
+    math::ShallowMatrix<float, 4, math::COLUMN_MAJOR> resultMatrix(result);
+	resultMatrix = matrix * scaleMatrix;
+
+	// overwrite returned result
+	matrix = resultMatrix;
 }
 
 
