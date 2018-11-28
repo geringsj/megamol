@@ -239,8 +239,6 @@ void  megamol::spout_sender::SpoutView3D::broadcastFramebuffer(FramebufferObject
 	if (!this->m_spoutSenderActive)
 		return;
 
-	//m_texture.copyFB();
-	//sender.sendTexture(m_texture.handle, m_texture.width, m_texture.height);
 	sender.sendTexture(fbo.GetColourTextureID(), fbo.GetWidth(), fbo.GetHeight());
 }
 
@@ -306,26 +304,23 @@ bool SpoutView3D::create(void) {
 	// inherit initial camera parameters
 	// TODO: overwrite with cam data from unity
 	const CameraParamsStore camParams{ *this->cam.Parameters() };
-	//this->m_monoCamParameters = new CameraParamsStore(camParams);
+	this->m_monoCamParameters = new CameraParamsStore(camParams);
 	this->m_stereoLCamParameters = new CameraParamsStore(camParams);
 	this->m_stereoRCamParameters = new CameraParamsStore(camParams);
 
-	this->m_monoCam = this->cam;// CameraOpenGL(m_monoCamParameters);
+	this->m_monoCam = CameraOpenGL(m_monoCamParameters);
 	this->m_stereoLCam = CameraOpenGL(m_stereoLCamParameters);
 	this->m_stereoRCam = CameraOpenGL(m_stereoRCamParameters);
 	
-	// m_fbWidth, m_fbHeight initially 0
 	// spout exported images
 	std::string name = m_interopSenderId + "Image/";
-	this->m_monoImageData.init(name + "Mono", 1, 1);// m_fbWidth, m_fbHeight);
-	this->m_stereoLImageData.init(name + "StereoL", 1, 1);// m_fbWidth, m_fbHeight);
-	this->m_stereoRImageData.init(name + "StereoR", 1, 1);// m_fbWidth, m_fbHeight);
+	this->m_monoImageData.init(name + "Mono", 1, 1);
+	this->m_stereoLImageData.init(name + "StereoL", 1, 1);
+	this->m_stereoRImageData.init(name + "StereoR", 1, 1);
 
 	m_monoFBO.Create(1, 1);
 	m_stereoFBO_L.Create(1, 1);
 	m_stereoFBO_R.Create(1, 1);
-
-	//m_texture.create(1, 1);
 
     return true;
 }
@@ -350,8 +345,6 @@ void SpoutView3D::release(void) {
 	m_monoFBO.Release();
 	m_stereoFBO_L.Release();
 	m_stereoFBO_R.Release();
-
-	//m_texture.destroy();
 }
 
 
@@ -376,7 +369,7 @@ bool SpoutView3D::ImageDataSender::initSender(std::string const& name)
 	senderName.resize(256, '\0');
 
 	spoutSender.SetCPUmode(true); // work around GL-DX interop fail on AMD
-	spoutSender.SetMemoryShareMode(false); // spout has a bug in new CPU-memory mode, so use shared memorymode, so use shared memory
+	spoutSender.SetMemoryShareMode(false); // spout has a bug in new CPU-memory mode, so use shared memorymode
 	spoutSender.SetDX9(true);
 	return spoutSender.CreateSender(senderName.c_str(), textureWidth, textureHeight);
 }
@@ -399,7 +392,7 @@ void SpoutView3D::ImageDataSender::sendTexture(const GLuint glTex, GLint width, 
 
 	updateTextureDimensions(width, height);
 
-	std::cout << "SPOUT SENDINT TEXTURE " << textureWidth << ", " << textureHeight << std::endl;
+	std::cout << "SPOUT SENDING TEXTURE " << textureWidth << ", " << textureHeight << std::endl;
 
 	spoutSender.SendTexture(glTex, GL_TEXTURE_2D, textureWidth, textureHeight);
 }
@@ -453,12 +446,15 @@ void SpoutView3D::OscPacketListener::ProcessMessage(
 		}
 	}
 
+	// for now, we only receive camera configurations. so it is ok to do the following.
+	// for the general case, we may want to organize the received data structures in some sort of map,
+	// addressed/indexed by the message name and suited for async thread-safe lookup of new data dumps.
 	CameraConfig tmp;
 	std::memcpy(&tmp, m_data.data(), sizeof(CameraConfig));
 
 	if (std::string(msg.AddressPattern()).find("Mono") != std::string::npos)
 	{
-		monoCam.exchange(tmp);
+		monoCam.exchange(tmp); // atomic data exchange
 	}
 	else 
 	if (std::string(msg.AddressPattern()).find("StereoL") != std::string::npos)
@@ -476,6 +472,7 @@ void SpoutView3D::OscPacketListener::ProcessMessage(
 	m_hasData = true;
 }
 
+// later, we may want to retrieve more than just camera configs from the OSC receiver channel. this is what this method is planned for.
 template<>
 SpoutView3D::CameraConfig SpoutView3D::OscPacketListener::getData()
 {
@@ -533,3 +530,4 @@ void SpoutView3D::applyCameraConfig(SpoutView3D::CameraOpenGL& cam, const SpoutV
 		<< "view height: " << conf.viewHeight_px << std::endl
 		<< "bbox scale: " << conf.dataBboxScale << std::endl;
 }
+

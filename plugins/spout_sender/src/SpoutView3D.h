@@ -114,6 +114,8 @@ namespace spout_sender {
 		using CameraOpenGL = vislib::graphics::gl::CameraOpenGL;
 
 		std::string m_interopSenderId{ "/UnityInterop/MegaMol/" };
+
+		OSCHandler m_oscSendChannel;
 		
 		vislib::math::Cuboid<float> m_dataBbox;
 
@@ -122,8 +124,6 @@ namespace spout_sender {
 			vislib::math::Cuboid<float> dataBbox;
 		};
 		DatasetShareData m_unitySharedData;
-
-		OSCHandler m_oscSendChannel;
 
 		// Unity OSC sends data in this exact order
 		struct CameraConfig {
@@ -164,53 +164,10 @@ namespace spout_sender {
 
 		OscPacketListener m_oscReceiveChannel;
 		std::unique_ptr<UdpListeningReceiveSocket> m_udpReceiveSocketPtr{ nullptr };
-		std::thread m_oscReceiveThread;
+		std::thread m_oscReceiveThread; // need to listen to OSC packets on second thread to not block
 
 		void checkOneTimeDataShare(const mmcRenderViewContext& context);
 		void sendData();
-
-		struct GLTexture {
-			GLuint handle = 0;
-			GLint width = 1, height = 1;
-
-			void create(int width, int height)
-			{
-				this->width = width;
-				this->height = height;
-
-				if(handle == 0)
-				{
-					glGenTextures(1, &handle);
-				}
-				this->bind();
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-				this->unbind();
-			}
-
-			void bind() { glBindTexture(GL_TEXTURE_2D, handle); }
-			void unbind() { glBindTexture(GL_TEXTURE_2D, 0); }
-
-			void copyFB()
-			{
-				glReadBuffer(GL_BACK);
-				this->bind();
-				glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0, width, height, 0);
-				this->unbind();
-			}
-
-			void destroy()
-			{
-				if(handle != 0)
-				{
-					glDeleteTextures(1, &handle);
-				}
-			}
-		};
-		GLTexture m_texture;
 
 		/** Texture handling and sharing */
 		struct ImageDataSender {
@@ -234,7 +191,6 @@ namespace spout_sender {
 			void destroySender();
 			void destroy();
 		};
-
 		ImageDataSender m_monoImageData;
 		ImageDataSender m_stereoLImageData;
 		ImageDataSender m_stereoRImageData;
@@ -250,7 +206,6 @@ namespace spout_sender {
 
 		// we overwrite the view camera / camera parameters with our settings
 		// and call the View3D::Render() implementation to produce the image we need
-
 		CameraOpenGL m_monoCam;
 		vislib::SmartPtr<vislib::graphics::CameraParameters> m_monoCamParameters;
 
