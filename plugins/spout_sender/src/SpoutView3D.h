@@ -112,10 +112,6 @@ namespace spout_sender {
 		* variables
 		**********************************************************************/
 		using CameraOpenGL = vislib::graphics::gl::CameraOpenGL;
-
-		std::string m_interopSenderId{ "/UnityInterop/MegaMol/" };
-
-		OSCHandler m_oscSendChannel;
 		
 		vislib::math::Cuboid<float> m_dataBbox;
 
@@ -141,6 +137,10 @@ namespace spout_sender {
 		};
 
 		void applyCameraConfig(CameraOpenGL& cam, const CameraConfig& conf);
+
+		// data/image send/receive via OSC/Spout
+		std::string m_interopSenderId{ "/UnityInterop/MegaMol/" };
+		OSCHandler m_oscSendChannel;
 
 		class OscPacketListener : public osc::OscPacketListener {
 		protected:

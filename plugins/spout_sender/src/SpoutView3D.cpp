@@ -347,6 +347,27 @@ void SpoutView3D::release(void) {
 	m_stereoFBO_R.Release();
 }
 
+void SpoutView3D::applyCameraConfig(SpoutView3D::CameraOpenGL& cam, const SpoutView3D::CameraConfig& conf)
+{
+	vislib::math::Point<vislib::graphics::SceneSpaceType, 3> position(
+		conf.cam_pos[0], conf.cam_pos[1], conf.cam_pos[2]);
+	vislib::math::Point<vislib::graphics::SceneSpaceType, 3> lookAt(
+		conf.lookAt_pos[0], conf.lookAt_pos[1], conf.lookAt_pos[2]);
+	vislib::math::Vector<vislib::graphics::SceneSpaceType, 3> up(
+		conf.up_vec[0], conf.up_vec[1], conf.up_vec[2]);
+
+	cam.Parameters()->SetView(position, lookAt, up);
+
+	cam.Parameters()->SetApertureAngle(conf.vieldOfViewY_deg);
+	cam.Parameters()->SetNearClip(conf.near_dist);
+	cam.Parameters()->SetFarClip(conf.far_dist);
+	cam.Parameters()->SetVirtualViewSize(
+		static_cast<vislib::graphics::ImageSpaceType>(conf.viewWidth_px),
+		static_cast<vislib::graphics::ImageSpaceType>(conf.viewHeight_px));
+    cam.Parameters()->SetTileRect(vislib::math::Rectangle<float>(0.0f, 0.0f, conf.viewWidth_px, conf.viewHeight_px));
+
+	cam.SetScale(conf.dataBboxScale);
+}
 
 
 // ***************************************
@@ -488,46 +509,5 @@ SpoutView3D::CameraConfig SpoutView3D::OscPacketListener::getData()
 	// this->unsetDataFlag();
 	// this->m_data.clear(); // osc part receives only when array cleared
 	// return ret;
-}
-
-const auto printVec = [](auto& vec) {
-	std::cout << "(" 
-		<< vec[0] << ", "
-		<< vec[1] << ", "
-		<< vec[2] << ")" << std::endl;
-};
-
-void SpoutView3D::applyCameraConfig(SpoutView3D::CameraOpenGL& cam, const SpoutView3D::CameraConfig& conf)
-{
-	vislib::math::Point<vislib::graphics::SceneSpaceType, 3> position(
-		conf.cam_pos[0], conf.cam_pos[1], conf.cam_pos[2]);
-	vislib::math::Point<vislib::graphics::SceneSpaceType, 3> lookAt(
-		conf.lookAt_pos[0], conf.lookAt_pos[1], conf.lookAt_pos[2]);
-	vislib::math::Vector<vislib::graphics::SceneSpaceType, 3> up(
-		conf.up_vec[0], conf.up_vec[1], conf.up_vec[2]);
-
-	printVec(position);
-	printVec(lookAt);
-	printVec(up);
-
-	cam.Parameters()->SetView(position, lookAt, up);
-
-	cam.Parameters()->SetApertureAngle(conf.vieldOfViewY_deg);
-	cam.Parameters()->SetNearClip(conf.near_dist);
-	cam.Parameters()->SetFarClip(conf.far_dist);
-	cam.Parameters()->SetVirtualViewSize(
-		static_cast<vislib::graphics::ImageSpaceType>(conf.viewWidth_px),
-		static_cast<vislib::graphics::ImageSpaceType>(conf.viewHeight_px));
-    cam.Parameters()->SetTileRect(vislib::math::Rectangle<float>(0.0f, 0.0f, conf.viewWidth_px, conf.viewHeight_px));
-
-	cam.SetScale(conf.dataBboxScale);
-
-	std::cout
-		<< "FoV: " << conf.vieldOfViewY_deg << std::endl
-		<< "near: " << conf.near_dist << std::endl
-		<< "far: " << conf.far_dist << std::endl
-		<< "view width: " << conf.viewWidth_px << std::endl
-		<< "view height: " << conf.viewHeight_px << std::endl
-		<< "bbox scale: " << conf.dataBboxScale << std::endl;
 }
 
