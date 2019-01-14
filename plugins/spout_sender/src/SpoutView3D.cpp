@@ -366,6 +366,10 @@ void SpoutView3D::applyCameraConfig(SpoutView3D::CameraOpenGL& cam, const SpoutV
 		static_cast<vislib::graphics::ImageSpaceType>(conf.viewHeight_px));
     cam.Parameters()->SetTileRect(vislib::math::Rectangle<float>(0.0f, 0.0f, conf.viewWidth_px, conf.viewHeight_px));
 
+	vislib::math::Vector<vislib::graphics::SceneSpaceType, 3> translate(
+		conf.dataBboxTranslate[0], conf.dataBboxTranslate[1], conf.dataBboxTranslate[2]);
+
+	cam.SetTranslate(translate);
 	cam.SetScale(conf.dataBboxScale);
 }
 

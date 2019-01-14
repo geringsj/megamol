@@ -133,6 +133,7 @@ namespace spout_sender {
 			int viewWidth_px       = 600;
 			int viewHeight_px      = 400;
 
+			float dataBboxTranslate[3] = { 0.0f };
 			float dataBboxScale = 1.0f;
 		};
 
