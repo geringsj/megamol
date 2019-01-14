@@ -393,9 +393,10 @@ bool SpoutView3D::ImageDataSender::initSender(std::string const& name)
 	senderName = name;
 	senderName.resize(256, '\0');
 
-	spoutSender.SetCPUmode(true); // work around GL-DX interop fail on AMD
-	spoutSender.SetMemoryShareMode(false); // spout has a bug in new CPU-memory mode, so use shared memorymode
-	spoutSender.SetDX9(true);
+	// use DX11 to GL texture sharing with texture update fix from: http://spout.zeal.co/forums/topic/error-in-dx11-cpu-texture-share-mode/
+	spoutSender.SetCPUmode(false);
+	spoutSender.SetMemoryShareMode(false);
+	spoutSender.SetDX9(false);
 	return spoutSender.CreateSender(senderName.c_str(), textureWidth, textureHeight);
 }
 
