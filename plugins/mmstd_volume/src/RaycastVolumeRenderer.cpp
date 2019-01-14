@@ -134,89 +134,120 @@ bool RaycastVolumeRenderer::GetExtents(megamol::core::Call& call) {
 
 bool RaycastVolumeRenderer::Render(megamol::core::Call& call)
 {
-	megamol::core::view::CallRender3D *cr = dynamic_cast<core::view::CallRender3D*>(&call);
-	if (cr == NULL) return false;
-
-	// manual creation of projection and view matrix
-	GLfloat fovy = (cr->GetCameraParameters()->ApertureAngle() / 180.0f) * 3.14f;
-	GLfloat near_clip = cr->GetCameraParameters()->NearClip();
-	GLfloat far_clip = cr->GetCameraParameters()->FarClip();
-	GLfloat f = 1.0f / std::tan(fovy / 2.0f);
-	GLfloat nf = 1.0f / (near_clip - far_clip);
-	GLfloat aspect_ratio = static_cast<GLfloat>(cr->GetViewport().AspectRatio());
-
-	mat4x4 proj_mx;
-	mat4x4_perspective(proj_mx, fovy, aspect_ratio, near_clip, far_clip);
-
-	auto cam_right = cr->GetCameraParameters()->Right();
-	auto cam_up = cr->GetCameraParameters()->Up();
-	auto cam_front = -cr->GetCameraParameters()->Front();
-	auto cam_position = cr->GetCameraParameters()->Position();
-
-	mat4x4 view_mx;
-	view_mx[0][0] = cam_right.X();
-	view_mx[0][1] = cam_up.X();
-	view_mx[0][2] = cam_front.X();
-	view_mx[0][3] = 0.0f;
-	
-	view_mx[1][0] = cam_right.Y();
-	view_mx[1][1] = cam_up.Y();
-	view_mx[1][2] = cam_front.Y();
-	view_mx[1][3] = 0.0f;
-	
-	view_mx[2][0] = cam_right.Z();
-	view_mx[2][1] = cam_up.Z();
-	view_mx[2][2] = cam_front.Z();
-	view_mx[2][3] = 0.0f;
-	
-	view_mx[3][0] = -(cam_position.X()*cam_right.X() + cam_position.Y()*cam_right.Y() + cam_position.Z()*cam_right.Z());
-	view_mx[3][1] = -(cam_position.X()*cam_up.X() + cam_position.Y()*cam_up.Y() + cam_position.Z()*cam_up.Z());
-	view_mx[3][2] = -(cam_position.X()*cam_front.X() + cam_position.Y()*cam_front.Y() + cam_position.Z()*cam_front.Z());
-	view_mx[3][3] = 1.0f;
-
-	if (!updateVolumeData()) return false;
-	if (!updateTransferFunction()) return false;
-	
-	// enable raycast volume rendering program
-	m_raycast_volume_compute_shdr->Enable();
-
-	//TODO set uniform values
-	mat4x4 volume_model_mx;
-	mat4x4_identity(volume_model_mx);
-	
-	mat4x4 view_proj_mx;
-	mat4x4 inv_view_proj_mx;
-	mat4x4_mul(view_proj_mx, proj_mx, view_mx);
-	mat4x4_invert(inv_view_proj_mx, view_proj_mx);
-	glUniformMatrix4fv(m_raycast_volume_compute_shdr->ParameterLocation("camera_inv_view_proj_mx"), 1, GL_FALSE, reinterpret_cast<float*>(&inv_view_proj_mx));
-
-	glUniformMatrix4fv(m_raycast_volume_compute_shdr->ParameterLocation("view_mx"), 1, GL_FALSE, reinterpret_cast<float*>(&view_mx));
-	glUniformMatrix4fv(m_raycast_volume_compute_shdr->ParameterLocation("proj_mx"), 1, GL_FALSE, reinterpret_cast<float*>(&proj_mx));
-
-	vec2 rt_resolution;
-	rt_resolution[0] = static_cast<float>(m_render_target->getWidth());
-	rt_resolution[1] = static_cast<float>(m_render_target->getHeight());
-	glUniform2fv(m_raycast_volume_compute_shdr->ParameterLocation("rt_resolution"), 1, rt_resolution);
-
-	// bbox sizes
-	vec3 box_min;
-	box_min[0] = m_volume_origin[0];
-	box_min[1] = m_volume_origin[1];
-	box_min[2] = m_volume_origin[2];
-
-	vec3 box_max;
-	box_max[0] = m_volume_origin[0] + m_volume_extents[0];
-	box_max[1] = m_volume_origin[1] + m_volume_extents[1];
-	box_max[2] = m_volume_origin[2] + m_volume_extents[2];
-	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMin"), 1, box_min);
-	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMax"), 1, box_max);
+    megamol::core::view::CallRender3D *cr = dynamic_cast<core::view::CallRender3D*>(&call);
+    if (cr == NULL) return false;
     
+    // manual creation of projection and view matrix
+    GLfloat fovy = (cr->GetCameraParameters()->ApertureAngle() / 180.0f) * 3.14f;
+    GLfloat near_clip = cr->GetCameraParameters()->NearClip();
+    GLfloat far_clip = cr->GetCameraParameters()->FarClip();
+    GLfloat f = 1.0f / std::tan(fovy / 2.0f);
+    GLfloat nf = 1.0f / (near_clip - far_clip);
+    GLfloat aspect_ratio = static_cast<GLfloat>(cr->GetViewport().AspectRatio());
+    
+    mat4x4 proj_mx;
+    mat4x4_perspective(proj_mx, fovy, aspect_ratio, near_clip, far_clip);
+    
+    auto cam_right = cr->GetCameraParameters()->Right();
+    auto cam_up = cr->GetCameraParameters()->Up();
+    auto cam_front = -cr->GetCameraParameters()->Front();
+    auto cam_position = cr->GetCameraParameters()->Position();
+    
+    mat4x4 view_mx;
+    view_mx[0][0] = cam_right.X();
+    view_mx[0][1] = cam_up.X();
+    view_mx[0][2] = cam_front.X();
+    view_mx[0][3] = 0.0f;
+    
+    view_mx[1][0] = cam_right.Y();
+    view_mx[1][1] = cam_up.Y();
+    view_mx[1][2] = cam_front.Y();
+    view_mx[1][3] = 0.0f;
+    
+    view_mx[2][0] = cam_right.Z();
+    view_mx[2][1] = cam_up.Z();
+    view_mx[2][2] = cam_front.Z();
+    view_mx[2][3] = 0.0f;
+    
+    view_mx[3][0] = -(cam_position.X()*cam_right.X() + cam_position.Y()*cam_right.Y() + cam_position.Z()*cam_right.Z());
+    view_mx[3][1] = -(cam_position.X()*cam_up.X() + cam_position.Y()*cam_up.Y() + cam_position.Z()*cam_up.Z());
+    view_mx[3][2] = -(cam_position.X()*cam_front.X() + cam_position.Y()*cam_front.Y() + cam_position.Z()*cam_front.Z());
+    view_mx[3][3] = 1.0f;
+    
+    if (!updateVolumeData()) return false;
+    if (!updateTransferFunction()) return false;
+    
+    // enable raycast volume rendering program
+    m_raycast_volume_compute_shdr->Enable();
+    
+    //TODO set uniform values
+    mat4x4 volume_model_mx;
+    mat4x4_identity(volume_model_mx);
+    
+    mat4x4 view_proj_mx;
+    mat4x4 inv_view_proj_mx;
+    mat4x4_mul(view_proj_mx, proj_mx, view_mx);
+    mat4x4_invert(inv_view_proj_mx, view_proj_mx);
+    glUniformMatrix4fv(m_raycast_volume_compute_shdr->ParameterLocation("camera_inv_view_proj_mx"), 1, GL_FALSE, reinterpret_cast<float*>(&inv_view_proj_mx));
+    
+    glUniformMatrix4fv(m_raycast_volume_compute_shdr->ParameterLocation("view_mx"), 1, GL_FALSE, reinterpret_cast<float*>(&view_mx));
+    glUniformMatrix4fv(m_raycast_volume_compute_shdr->ParameterLocation("proj_mx"), 1, GL_FALSE, reinterpret_cast<float*>(&proj_mx));
+    
+    vec2 rt_resolution;
+    rt_resolution[0] = static_cast<float>(m_render_target->getWidth());
+    rt_resolution[1] = static_cast<float>(m_render_target->getHeight());
+    glUniform2fv(m_raycast_volume_compute_shdr->ParameterLocation("rt_resolution"), 1, rt_resolution);
+    
+    // bbox sizes
+    vec3 box_min;
+    box_min[0] = m_volume_origin[0];
+    box_min[1] = m_volume_origin[1];
+    box_min[2] = m_volume_origin[2];
+    
+    vec3 box_max;
+    box_max[0] = m_volume_origin[0] + m_volume_extents[0];
+    box_max[1] = m_volume_origin[1] + m_volume_extents[1];
+    box_max[2] = m_volume_origin[2] + m_volume_extents[2];
+    
+    
+    // hack for model matrix usage in Unity-Interop with VrInterop
+    // overwrite view matrix
+    mat4x4 saved_view_mx; // has combined view+model matrix: saved = view * model
+    mat4x4_identity(saved_view_mx);
+    mat4x4 inv_view_mx;
+    mat4x4_identity(inv_view_mx);
+    mat4x4 model_mx;
+    mat4x4_identity(model_mx);
+    glGetFloatv(GL_MODELVIEW_MATRIX, reinterpret_cast<float*>(saved_view_mx));
+    mat4x4_invert(inv_view_mx, view_mx);
+    mat4x4_mul(model_mx, inv_view_mx, saved_view_mx); // model = view_inv * saved = view_inv * view * model
+    
+    // bbox transformed by model matrix
+    vec4 box_min_4;
+    vec4 box_min_4_result;
+    box_min_4[0] = box_min[0];
+    box_min_4[1] = box_min[1];
+    box_min_4[2] = box_min[2];
+    box_min_4[3] = 1.0f;
+    mat4x4_mul_vec4(box_min_4_result, model_mx, box_min_4);
+    
+    vec4 box_max_4;
+    vec4 box_max_4_result;
+    box_max_4[0] = box_max[0];
+    box_max_4[1] = box_max[1];
+    box_max_4[2] = box_max[2];
+    box_max_4[3] = 1.0f;
+    mat4x4_mul_vec4(box_max_4_result, model_mx, box_max_4);
+    
+    // use transformed bbox here
+    glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMin"), 1, box_min_4_result);
+    glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMax"), 1, box_max_4_result);
 
     glUniform3f(m_raycast_volume_compute_shdr->ParameterLocation("halfVoxelSize"), // step size until next voxel in texture space
     	1.0f / (2.0f * (m_volume_resolution[0] - 1)),
     	1.0f / (2.0f * (m_volume_resolution[1] - 1)),
     	1.0f / (2.0f * (m_volume_resolution[2] - 1)));
-    glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("voxelSize"), 1.0); // edge length of voxel in world space 
+    glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("voxelSize"), 1.0 * model_mx[0][0]); // edge length of voxel in world space 
     glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("rayStepRatio"), this->m_ray_step_ratio_param.Param<core::param::FloatParam>()->Value());
     glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("opacityThreshold"), 1.0);
     
