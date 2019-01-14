@@ -170,13 +170,15 @@ namespace gl {
         /** projection up vector */
         mutable math::Vector<SceneSpaceType, 3> up;
 
-		/** Sometimes we want to scale the dataset.
+		/** Sometimes we want to translate and scale the dataset.
 		    For now, do this via a hack in the view matrix.
 			See implementation of CameraOpenGL::ViewMatrix(float *mat)*/
 		mutable float uniformScaleFacor = 1.0;
+        mutable math::Vector<SceneSpaceType, 3> modelTranslate;
 
 		public:
 			void SetScale(const float scale) { this->uniformScaleFacor = scale; }
+			void SetTranslate(const math::Vector<SceneSpaceType, 3> translation) { this->modelTranslate = translation; }
     };
     
 } /* end namespace gl */
