@@ -269,6 +269,7 @@ bool RaycastVolumeRenderer::Render(megamol::core::Call& call)
 	box_min[0] = m_volume_origin[0];
 	box_min[1] = m_volume_origin[1];
 	box_min[2] = m_volume_origin[2];
+
 	vec3 box_max;
 	box_max[0] = m_volume_origin[0] + m_volume_extents[0];
 	box_max[1] = m_volume_origin[1] + m_volume_extents[1];
@@ -276,9 +277,12 @@ bool RaycastVolumeRenderer::Render(megamol::core::Call& call)
 	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMin"), 1, box_min);
 	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMax"), 1, box_max);
 
-    glUniform3f(m_raycast_volume_compute_shdr->ParameterLocation("halfVoxelSize"), 1.0f / (2.0f * (m_volume_resolution[0] - 1))
-        , 1.0f / (2.0f * (m_volume_resolution[1] - 1)), 1.0f / (2.0f * (m_volume_resolution[2] - 1)));
-	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("voxelSize"), 1.0);
+
+    glUniform3f(m_raycast_volume_compute_shdr->ParameterLocation("halfVoxelSize"), // step size until next voxel in texture space
+		1.0f / (2.0f * (m_volume_resolution[0] - 1)),
+		1.0f / (2.0f * (m_volume_resolution[1] - 1)),
+		1.0f / (2.0f * (m_volume_resolution[2] - 1)));
+	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("voxelSize"), 1.0); // edge length of voxel in world space 
 	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("rayStepRatio"), this->m_ray_step_ratio_param.Param<core::param::FloatParam>()->Value());
 	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("opacityThreshold"), 1.0);
 

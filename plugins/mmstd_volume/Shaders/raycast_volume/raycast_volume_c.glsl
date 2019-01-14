@@ -17,9 +17,9 @@ uniform vec3 boxMin;
 /**/
 uniform vec3 boxMax;
 /**/
-uniform float voxelSize;
+uniform float voxelSize; // edge length of voxel in world space
 /**/
-uniform vec3 halfVoxelSize;
+uniform vec3 halfVoxelSize; // step size until next voxel in texture space
 uniform float rayStepRatio;
 /**/
 uniform float opacityThreshold;
@@ -38,6 +38,7 @@ struct Ray {
     vec3 d;
 };
 
+// Assumption: Bounding box is axis-aligned
 bool intersectBox(Ray r, vec3 boxmin, vec3 boxmax, out float tnear, out float tfar) {
     vec3 invR = vec3(1.0f) / r.d;
     vec3 tbot = invR * (boxmin - r.o);
