@@ -237,15 +237,46 @@ bool RaycastVolumeRenderer::Render(megamol::core::Call& call)
 	box_max[0] = m_volume_origin[0] + m_volume_extents[0];
 	box_max[1] = m_volume_origin[1] + m_volume_extents[1];
 	box_max[2] = m_volume_origin[2] + m_volume_extents[2];
-	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMin"), 1, box_min);
-	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMax"), 1, box_max);
 
+
+	// hack for model matrix usage in Unity-Interop with spout_sender
+	// overwrite view matrix
+	mat4x4 saved_view_mx; // has combined view+model matrix: saved = view * model
+	mat4x4_identity(saved_view_mx);
+	mat4x4 inv_view_mx;
+	mat4x4_identity(inv_view_mx);
+	mat4x4 model_mx;
+	mat4x4_identity(model_mx);
+	glGetFloatv(GL_MODELVIEW_MATRIX, reinterpret_cast<float*>(saved_view_mx));
+	mat4x4_invert(inv_view_mx, view_mx);
+	mat4x4_mul(model_mx, inv_view_mx, saved_view_mx); // model = view_inv * saved = view_inv * view * model
+
+	// bbox transformed by model matrix
+	vec4 box_min_4;
+	vec4 box_min_4_result;
+	box_min_4[0] = box_min[0];
+	box_min_4[1] = box_min[1];
+	box_min_4[2] = box_min[2];
+	box_min_4[3] = 1.0f;
+	mat4x4_mul_vec4(box_min_4_result, model_mx, box_min_4);
+
+	vec4 box_max_4;
+	vec4 box_max_4_result;
+	box_max_4[0] = box_max[0];
+	box_max_4[1] = box_max[1];
+	box_max_4[2] = box_max[2];
+	box_max_4[3] = 1.0f;
+	mat4x4_mul_vec4(box_max_4_result, model_mx, box_max_4);
+
+	// use transformed bbox here
+	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMin"), 1, box_min_4_result);
+	glUniform3fv(m_raycast_volume_compute_shdr->ParameterLocation("boxMax"), 1, box_max_4_result);
 
     glUniform3f(m_raycast_volume_compute_shdr->ParameterLocation("halfVoxelSize"), // step size until next voxel in texture space
 		1.0f / (2.0f * (m_volume_resolution[0] - 1)),
 		1.0f / (2.0f * (m_volume_resolution[1] - 1)),
 		1.0f / (2.0f * (m_volume_resolution[2] - 1)));
-	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("voxelSize"), 1.0); // edge length of voxel in world space 
+	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("voxelSize"), 1.0 * model_mx[0][0]); // edge length of voxel in world space 
 	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("rayStepRatio"), this->m_ray_step_ratio_param.Param<core::param::FloatParam>()->Value());
 	glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("opacityThreshold"), 1.0);
 
