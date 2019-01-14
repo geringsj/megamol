@@ -176,23 +176,6 @@ bool RaycastVolumeRenderer::Render(megamol::core::Call& call)
 
 	mat4x4 proj_mx;
 	mat4x4_perspective(proj_mx, fovy, aspect_ratio, near_clip, far_clip);
-	//std::array<GLfloat, 16> projection_matrix;
-	//projection_matrix[0] = f / aspect_ratio;
-	//projection_matrix[1] = 0.0f;
-	//projection_matrix[2] = 0.0f;
-	//projection_matrix[3] = 0.0f;
-	//projection_matrix[4] = 0.0f;
-	//projection_matrix[5] = f;
-	//projection_matrix[6] = 0.0f;
-	//projection_matrix[7] = 0.0f;
-	//projection_matrix[8] = 0.0f;
-	//projection_matrix[9] = 0.0f;
-	//projection_matrix[10] = (far_clip + near_clip) * nf;
-	//projection_matrix[11] = -1.0f;
-	//projection_matrix[12] = 0.0f;
-	//projection_matrix[13] = 0.0f;
-	//projection_matrix[14] = (2.0f * far_clip * near_clip) * nf;
-	//projection_matrix[15] = 0.0f;
 
 	auto cam_right = cr->GetCameraParameters()->Right();
 	auto cam_up = cr->GetCameraParameters()->Up();
@@ -200,26 +183,6 @@ bool RaycastVolumeRenderer::Render(megamol::core::Call& call)
 	auto cam_position = cr->GetCameraParameters()->Position();
 
 	mat4x4 view_mx;
-	//std::array<GLfloat, 16> view_matrix;
-	//view_matrix[0] = cam_right.X();
-	//view_matrix[1] = cam_up.X();
-	//view_matrix[2] = cam_front.X();
-	//view_matrix[3] = 0.0f;
-	//
-	//view_matrix[4] = cam_right.Y();
-	//view_matrix[5] = cam_up.Y();
-	//view_matrix[6] = cam_front.Y();
-	//view_matrix[7] = 0.0f;
-	//
-	//view_matrix[8] = cam_right.Z();
-	//view_matrix[9] = cam_up.Z();
-	//view_matrix[10] = cam_front.Z();
-	//view_matrix[11] = 0.0f;
-	//
-	//view_matrix[12] = -(cam_position.X()*cam_right.X() + cam_position.Y()*cam_right.Y() + cam_position.Z()*cam_right.Z());
-	//view_matrix[13] = -(cam_position.X()*cam_up.X() + cam_position.Y()*cam_up.Y() + cam_position.Z()*cam_up.Z());
-	//view_matrix[14] = -(cam_position.X()*cam_front.X() + cam_position.Y()*cam_front.Y() + cam_position.Z()*cam_front.Z());
-	//view_matrix[15] = 1.0f;
 	view_mx[0][0] = cam_right.X();
 	view_mx[0][1] = cam_up.X();
 	view_mx[0][2] = cam_front.X();
