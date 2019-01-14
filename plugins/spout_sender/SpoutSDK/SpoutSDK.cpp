@@ -243,7 +243,9 @@ bool Spout::UpdateSender(const char *sendername, unsigned int width, unsigned in
 			// with the new dimensions and update the sender info
 			// No need to re-initialize DirectX, only the GLDX interop
 			// which is re-registered for the new texture
-			interop.CreateInterop(g_hWnd, sendername, width, height, dwFormat, false); // false means a sender
+			//interop.CreateInterop(g_hWnd, sendername, width, height, dwFormat, false); // false means a sender
+			ReleaseSender(); // hotfix from forum bug report
+			CreateSender(sendername, width, height, dwFormat);
 		}
 		else {
 			// Memoryshare has to update the sender information as well as the memory map size

@@ -1164,12 +1164,12 @@ void spoutGLDXinterop::CleanupInterop(bool bExit)
 	// Some of these things need an opengl context so check
 	if (ctx != NULL) {
 		// Problem here on exit, but not on change of resolution while the program is running !?
-		if (!bExit) {
+		//if (!bExit) {
 			if (m_hInteropDevice != NULL && m_hInteropObject != NULL) {
 				wglDXUnregisterObjectNV(m_hInteropDevice, m_hInteropObject);
 				m_hInteropObject = NULL;
 			}
-		}
+		//}
 
 		if (m_hInteropDevice != NULL) {
 			wglDXCloseDeviceNV(m_hInteropDevice);
@@ -1203,7 +1203,8 @@ void spoutGLDXinterop::CleanupInterop(bool bExit)
 
 	} // endif there is an opengl context
 
-	CleanupDirectX(bExit);
+	//CleanupDirectX(bExit);
+	CleanupDirectX(true);
 
 	// Close general texture access mutex
 	spoutdx.CloseAccessMutex(m_hAccessMutex);
