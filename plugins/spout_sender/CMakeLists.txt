@@ -22,6 +22,8 @@ if(BUILD_${EXPORT_NAME}_PLUGIN)
   file(GLOB_RECURSE spout_header_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "SpoutSDK/*.h")
 
   add_subdirectory(oscpack)
+  
+  add_subdirectory(MWK-mint/interop)
 
   # Target definition
   add_library(${PROJECT_NAME} SHARED ${public_header_files} ${header_files} ${source_files} ${spout_source_files} ${spout_header_files})# ${oscpack_source_files} ${oscpack_header_files})
@@ -29,7 +31,7 @@ if(BUILD_${EXPORT_NAME}_PLUGIN)
   target_compile_definitions(${PROJECT_NAME} PRIVATE ${EXPORT_NAME}_EXPORTS)
   target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  "include" "src" "SpoutSDK")
-  target_link_libraries(${PROJECT_NAME} PRIVATE core oscpack)
+  target_link_libraries(${PROJECT_NAME} PRIVATE core oscpack interop)
 
   set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 

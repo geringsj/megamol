@@ -47,6 +47,19 @@ namespace {
 			static_cast<decltype(width2)>(width1) != width2
 			|| static_cast<decltype(height2)>(height1) != height2;
 	};
+
+	const auto resizeFBO = [&](auto& fbo, const int width, const int height)
+	{
+		// maybe FBO texture resolution needs to change
+		if (areDimsDifferent(width, height, fbo.GetWidth(), fbo.GetHeight()))
+		{
+			if (fbo.IsValid())
+				fbo.Release();
+	
+			fbo.Create(width, height, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, SpoutView3D::FramebufferObject::ATTACHMENT_TEXTURE,
+				GL_DEPTH_COMPONENT24, SpoutView3D::FramebufferObject::ATTACHMENT_DISABLED, GL_STENCIL_INDEX);
+		}
+	};
 }
 
 /*
@@ -54,74 +67,23 @@ namespace {
  */
 void SpoutView3D::Render(const mmcRenderViewContext& context) {
 	updateParameters();
-	m_monoFBO.Disable();
-	checkOneTimeDataShare(context);
+
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // to get the Bbox, we issue a Render(). clean it up.
-	//checkFramebufferSize();
 
-	//if(!m_unitySharedData.oneTimeDataIsShared)
-		sendData();
+	checkOneTimeDataShare(context);
+	sendData();
 
-	if (this->m_udpReceiveSocketPtr == nullptr)
+    bool hasCam = m_camReceiver.getData<interop::StereoCameraConfiguration>(m_stereoCamConfig);
+
+	if (hasCam)
 	{
-		try {
-			//auto& ipEndpointName = m_oscSendChannel.m_sendingEndpoint;
-			this->m_udpReceiveSocketPtr = 
-				std::make_unique<UdpListeningReceiveSocket>(IpEndpointName("127.0.0.1", 4243), &m_oscReceiveChannel);
-
-			m_oscReceiveThread = std::thread{[&]() { this->m_udpReceiveSocketPtr->Run(); }};
-		}
-		catch (...)
-		{
-			std::cout << "Failed to set up OSC Receiver via UDP" << std::endl;
-		}
+        m_cameraConfig_L = m_stereoCamConfig.cameraLeftEye;
+        m_cameraConfig_R = m_stereoCamConfig.cameraRightEye;
+		this->applyCameraConfig(m_stereoLCam, m_cameraConfig_L);
+		this->applyCameraConfig(m_stereoRCam, m_cameraConfig_R);
 	}
 
-	if (m_oscReceiveChannel.hasData())
-	{
-		const CameraConfig stereoLConf = m_oscReceiveChannel.stereoLCam.load();
-		const CameraConfig stereoRConf = m_oscReceiveChannel.stereoRCam.load();
-		const CameraConfig monoConf = m_oscReceiveChannel.getData<CameraConfig>();
-		this->applyCameraConfig(m_monoCam,    monoConf);
-		this->applyCameraConfig(m_stereoLCam, stereoLConf);
-		this->applyCameraConfig(m_stereoRCam, stereoRConf);
-
-		const auto resizeFBO = [&](auto& fbo, const auto& camConfig)
-		{
-			// maybe FBO texture resolution needs to change
-			int width = camConfig.viewWidth_px, height = camConfig.viewHeight_px;
-			if (areDimsDifferent(width, height, fbo.GetWidth(), fbo.GetHeight()))
-			{ 
-
-				if (fbo.IsValid())
-					fbo.Release();
-				fbo.Create(width, height,
-					GL_RGBA8,
-					GL_RGBA,
-					GL_UNSIGNED_BYTE,
-					FramebufferObject::ATTACHMENT_TEXTURE,
-					GL_DEPTH_COMPONENT24,
-					FramebufferObject::ATTACHMENT_DISABLED,
-					GL_STENCIL_INDEX);
-				//m_texture.create(width, height);
-
-				std::cout << "===> FBO Size (" <<
-					fbo.GetWidth() << ", " << 
-					fbo.GetHeight()
-					<< ")" << std::endl;
-			}
-		};
-
-		// maybe FBO texture resolution needs to change
-		resizeFBO(m_monoFBO, monoConf);
-		resizeFBO(m_stereoFBO_L, stereoLConf);
-		resizeFBO(m_stereoFBO_R, stereoRConf);
-	}
-
-	if (!m_monoFBO.IsValid())
-		std::cout << "FBO NOT VALID BRUH" << std::endl;
-
-	const auto setFBO = [&](auto& fbo)
+	const auto setFBO = [&](FramebufferObject& fbo)
 	{
 		int fboVp[4] = { 0, 0, fbo.GetWidth(), fbo.GetHeight() };
 		Base::overrideViewport = fboVp;
@@ -129,15 +91,12 @@ void SpoutView3D::Render(const mmcRenderViewContext& context) {
 		fbo.Enable();
 	};
 
-	if (isNewFbSize(m_monoFBO.GetWidth(), m_monoFBO.GetHeight()))
-		Base::Resize(m_monoFBO.GetWidth(), m_monoFBO.GetHeight());
-
-	//Base::rendererSlot.CallAs<view::CallRender3D>()->EnableOutputBuffer();
-
-	std::cout << "View Size (" <<
-		this->cam.Parameters()->TileRect().Width() << ", " << 
-		this->cam.Parameters()->TileRect().Height()
-		<< ")" << std::endl;
+	if (hasCam && isNewFbSize(m_cameraConfig_L.projectionParameters.pixelWidth, m_cameraConfig_L.projectionParameters.pixelHeight))
+	{
+		Base::Resize(m_cameraConfig_L.projectionParameters.pixelWidth, m_cameraConfig_L.projectionParameters.pixelHeight);
+        resizeFBO(m_stereoFBO_L, m_cameraConfig_L.projectionParameters.pixelWidth, m_cameraConfig_L.projectionParameters.pixelHeight);
+        resizeFBO(m_stereoFBO_R, m_cameraConfig_R.projectionParameters.pixelWidth, m_cameraConfig_R.projectionParameters.pixelHeight);
+	}
 
 	// on screen resize
 	// also sets camera aspect ratio
@@ -148,26 +107,24 @@ void SpoutView3D::Render(const mmcRenderViewContext& context) {
 
 	//switch(m_currentRenderingMode) {
 	//	case CameraMode::Mono:
-			setFBO(m_monoFBO);
-			renderFromCamera(m_monoCam, context);
-			broadcastFramebuffer(m_monoFBO, m_monoImageData);
-			m_monoFBO.Disable();
-			m_monoFBO.DrawColourTexture();
+			// setFBO(m_monoFBO);
+			// renderFromCamera(m_monoCam, context);
+			// broadcastFramebuffer(m_monoFBO, m_monoImageData);
+			// m_monoFBO.Disable();
+			// m_monoFBO.DrawColourTexture();
 	//		break;
 	//	case CameraMode::Stereo:
 			setFBO(m_stereoFBO_L);
 			renderFromCamera(m_stereoLCam, context);
-			broadcastFramebuffer(m_stereoFBO_L, m_stereoLImageData);
+			broadcastFramebuffer(m_stereoFBO_L, m_stereoImageSender_L);
 			m_stereoFBO_L.Disable();
+
 			setFBO(m_stereoFBO_R);
 			renderFromCamera(m_stereoRCam, context);
-			broadcastFramebuffer(m_stereoFBO_R, m_stereoRImageData);
+			broadcastFramebuffer(m_stereoFBO_R, m_stereoImageSender_R);
 			m_stereoFBO_R.Disable();
 	//		break;
 	//}
-
-	// framebuffer broadcasts applied new FB dimensions to textures
-	m_hasNewFbSize = false;
 }
 
 void  megamol::spout_sender::SpoutView3D::renderFromCamera(const CameraOpenGL & viewCamera, const mmcRenderViewContext& context)
@@ -180,61 +137,32 @@ void  megamol::spout_sender::SpoutView3D::renderFromCamera(const CameraOpenGL & 
 
 void megamol::spout_sender::SpoutView3D::checkOneTimeDataShare(const mmcRenderViewContext& context)
 {
-	if (!m_unitySharedData.oneTimeDataIsShared)
+    auto defBbox = m_dataBbox;
+
+	if (!oneTimeDataIsShared)
 	{
 		// get one time data: bbox, ??
 		Base::Render(context); // base render sets bbox of dataset
 
 		//m_dataBbox = this->bboxs.ObjectSpaceBBox();
-		m_dataBbox = this->bboxs.WorldSpaceBBox();
+		const auto bbox = this->bboxs.WorldSpaceBBox();
 		// bbox is such a fuckup
 
-		const auto printBbox = [&](std::string name, auto bbox) {
-			std::cout << name << " Bbox: min("
-				<< bbox.GetLeftBottomBack().GetX() << ", "
-				<< bbox.GetLeftBottomBack().GetY() << ", "
-				<< bbox.GetLeftBottomBack().GetZ()
-				<< "), max("
-				<< bbox.GetRightTopFront().GetX() << ", "
-				<< bbox.GetRightTopFront().GetY() << ", "
-				<< bbox.GetRightTopFront().GetZ()
-				<< ")" << std::endl;
-		};
+		defBbox.min = interop::vec4();
+		defBbox.max = interop::vec4();
 
-		std::cout << "is OS Bbox valid: " << this->bboxs.IsObjectSpaceBBoxValid() << ", ObjectSpaceScale: " << this->bboxs.ObjectSpaceScale() << std::endl;
-		printBbox("Object Space", this->bboxs.ObjectSpaceBBox());
-		std::cout << "is WS Bbox valid: " << this->bboxs.IsWorldSpaceBBoxValid() << std::endl;
-		printBbox("World Space", this->bboxs.WorldSpaceBBox());
-
-		m_unitySharedData.oneTimeDataIsShared = true;
+		// std::cout << "is OS Bbox valid: " << this->bboxs.IsObjectSpaceBBoxValid() << ", ObjectSpaceScale: " << this->bboxs.ObjectSpaceScale() << std::endl;
+		// std::cout << "is WS Bbox valid: " << this->bboxs.IsWorldSpaceBBoxValid() << std::endl;
+		oneTimeDataIsShared = true;
+        m_dataBbox = defBbox;
 	}
 }
 
 void megamol::spout_sender::SpoutView3D::sendData()
 {
-	if (!m_oscSendChannel.isReady())
-		return;
-
-	// send one time data
-	const auto msgName = m_interopSenderId + "Bbox";
-	m_oscSendChannel << osc::BeginBundleImmediate
-		<< osc::BeginMessage(msgName.c_str())
-			// min bbox point
-			<< m_dataBbox.GetLeftBottomBack().GetX()
-			<< m_dataBbox.GetLeftBottomBack().GetY()
-			<< m_dataBbox.GetLeftBottomBack().GetZ()
-			// max bbox point
-			<< m_dataBbox.GetRightTopFront().GetX()
-			<< m_dataBbox.GetRightTopFront().GetY()
-			<< m_dataBbox.GetRightTopFront().GetZ()
-		<< osc::EndMessage
-	<< osc::EndBundle;
-
-	m_oscSendChannel.send();
-	m_oscSendChannel.clearStream();
 }
 
-void  megamol::spout_sender::SpoutView3D::broadcastFramebuffer(FramebufferObject& fbo, ImageDataSender& sender)
+void  megamol::spout_sender::SpoutView3D::broadcastFramebuffer(FramebufferObject& fbo, interop::TextureSender& sender)
 {
 	if (!this->m_spoutSenderActive)
 		return;
@@ -273,18 +201,6 @@ void SpoutView3D::Resize(unsigned int width, unsigned int height) {
 	Base::Resize(width, height);
 }
 
-void SpoutView3D::checkFramebufferSize()
-{
-	GLint dims[4] = { 0 };
-	glGetIntegerv(GL_VIEWPORT, dims);
-	const GLint fbWidth = dims[2];
-	const GLint fbHeight = dims[3];
-
-	m_hasNewFbSize = isNewFbSize(fbWidth, fbHeight);
-	if (m_hasNewFbSize)
-		Resize(fbWidth, fbHeight);
-}
-
 /*
  * spout_sender::SpoutView3D::OnRenderView
  */
@@ -299,8 +215,6 @@ bool SpoutView3D::OnRenderView(Call& call) {
 bool SpoutView3D::create(void) {
 	Base::create();
 
-	m_dataBbox.SetNull();
-
 	// inherit initial camera parameters
 	// TODO: overwrite with cam data from unity
 	const CameraParamsStore camParams{ *this->cam.Parameters() };
@@ -311,16 +225,17 @@ bool SpoutView3D::create(void) {
 	this->m_monoCam = CameraOpenGL(m_monoCamParameters);
 	this->m_stereoLCam = CameraOpenGL(m_stereoLCamParameters);
 	this->m_stereoRCam = CameraOpenGL(m_stereoRCamParameters);
-	
-	// spout exported images
-	std::string name = m_interopSenderId + "Image/";
-	this->m_monoImageData.init(name + "Mono", 1, 1);
-	this->m_stereoLImageData.init(name + "StereoL", 1, 1);
-	this->m_stereoRImageData.init(name + "StereoR", 1, 1);
 
-	m_monoFBO.Create(1, 1);
+
+	// m_dataBbox - set in render()
+	m_camReceiver.start("tcp://127.0.0.1:12345", "camera");
+	// interop::DataReceiver m_datasetPoseReceiver;
+
 	m_stereoFBO_L.Create(1, 1);
 	m_stereoFBO_R.Create(1, 1);
+
+    m_stereoImageSender_L.init("megamolLeft");
+    m_stereoImageSender_R.init("megamolRight");
 
     return true;
 }
@@ -332,187 +247,45 @@ bool SpoutView3D::create(void) {
 void SpoutView3D::release(void) {
 	Base::release();
 
-	if (this->m_udpReceiveSocketPtr)
-	{
-		this->m_udpReceiveSocketPtr->AsynchronousBreak();
-		m_oscReceiveThread.join();
-	}
+	m_camReceiver.stop();
 
-	this->m_monoImageData.destroy();
-	this->m_stereoLImageData.destroy();
-	this->m_stereoRImageData.destroy();
-
-	m_monoFBO.Release();
 	m_stereoFBO_L.Release();
 	m_stereoFBO_R.Release();
+
+    m_stereoImageSender_L.destroy();
+    m_stereoImageSender_R.destroy();
 }
 
-void SpoutView3D::applyCameraConfig(SpoutView3D::CameraOpenGL& cam, const SpoutView3D::CameraConfig& conf)
+void SpoutView3D::applyCameraConfig(SpoutView3D::CameraOpenGL& cam, const interop::CameraConfiguration& conf)
 {
 	vislib::math::Point<vislib::graphics::SceneSpaceType, 3> position(
-		conf.cam_pos[0], conf.cam_pos[1], conf.cam_pos[2]);
+		conf.viewParameters.eyePos.x,
+		conf.viewParameters.eyePos.y,
+		conf.viewParameters.eyePos.z);
+
 	vislib::math::Point<vislib::graphics::SceneSpaceType, 3> lookAt(
-		conf.lookAt_pos[0], conf.lookAt_pos[1], conf.lookAt_pos[2]);
+		conf.viewParameters.lookAtPos.x,
+		conf.viewParameters.lookAtPos.y,
+		conf.viewParameters.lookAtPos.z);
+
 	vislib::math::Vector<vislib::graphics::SceneSpaceType, 3> up(
-		conf.up_vec[0], conf.up_vec[1], conf.up_vec[2]);
+		conf.viewParameters.camUpDir.x,
+		conf.viewParameters.camUpDir.y,
+		conf.viewParameters.camUpDir.z);
 
 	cam.Parameters()->SetView(position, lookAt, up);
 
-	cam.Parameters()->SetApertureAngle(conf.vieldOfViewY_deg);
-	cam.Parameters()->SetNearClip(conf.near_dist);
-	cam.Parameters()->SetFarClip(conf.far_dist);
-	cam.Parameters()->SetVirtualViewSize(
-		static_cast<vislib::graphics::ImageSpaceType>(conf.viewWidth_px),
-		static_cast<vislib::graphics::ImageSpaceType>(conf.viewHeight_px));
-    cam.Parameters()->SetTileRect(vislib::math::Rectangle<float>(0.0f, 0.0f, conf.viewWidth_px, conf.viewHeight_px));
+	cam.Parameters()->SetApertureAngle(conf.projectionParameters.fieldOfViewY_rad * 180.f / vislib::math::PI_DOUBLE); // cam.Parameters()->SetApertureAngle(conf.vieldOfViewY_deg);
+	cam.Parameters()->SetNearClip(conf.projectionParameters.nearClipPlane);
+	cam.Parameters()->SetFarClip(conf.projectionParameters.farClipPlane);
+    cam.Parameters()->SetVirtualViewSize(
+		static_cast<vislib::graphics::ImageSpaceType>(conf.projectionParameters.pixelWidth),
+		static_cast<vislib::graphics::ImageSpaceType>(conf.projectionParameters.pixelHeight));
+    cam.Parameters()->SetTileRect(vislib::math::Rectangle<float>(0.0f, 0.0f, conf.projectionParameters.pixelWidth, conf.projectionParameters.pixelHeight));
 
-	vislib::math::Vector<vislib::graphics::SceneSpaceType, 3> translate(
-		conf.dataBboxTranslate[0], conf.dataBboxTranslate[1], conf.dataBboxTranslate[2]);
-
+	vislib::math::Vector<vislib::graphics::SceneSpaceType, 3> translate(0.f, 0.f, 0.f);
+		//conf.dataBboxTranslate[0], conf.dataBboxTranslate[1], conf.dataBboxTranslate[2]);
 	cam.SetTranslate(translate);
-	cam.SetScale(conf.dataBboxScale);
-}
-
-
-// ***************************************
-// *** implement struct ImageShareData ***
-// ***************************************
-
-bool SpoutView3D::ImageDataSender::init(std::string const& name, const unsigned int width, const unsigned int height)
-{
-	this->textureWidth = width;
-	this->textureHeight = height;
-	return initSender(name);
-}
-bool SpoutView3D::ImageDataSender::initSender(std::string const& name)
-{
-	// spout userguide says names _must_ use char arrays of size 256
-	if (name.size() > 256)
-		return false;
-
-	senderName = name;
-	senderName.resize(256, '\0');
-
-	// use DX11 to GL texture sharing with texture update fix from: http://spout.zeal.co/forums/topic/error-in-dx11-cpu-texture-share-mode/
-	spoutSender.SetCPUmode(false);
-	spoutSender.SetMemoryShareMode(false);
-	spoutSender.SetDX9(false);
-	return spoutSender.CreateSender(senderName.c_str(), textureWidth, textureHeight);
-}
-
-void SpoutView3D::ImageDataSender::updateTextureDimensions(const GLint fbWidth, const GLint fbHeight)
-{
-	if (areDimsDifferent(textureWidth, textureHeight, fbWidth, fbHeight))
-	{
-		textureWidth = static_cast<unsigned int>(fbWidth);
-		textureHeight = static_cast<unsigned int>(fbHeight);
-
-		spoutSender.UpdateSender(senderName.c_str(), textureWidth, textureHeight);
-	}
-}
-
-void SpoutView3D::ImageDataSender::sendTexture(const GLuint glTex, GLint width, GLint height)
-{
-	if (width == 0 || height == 0)
-		return;
-
-	updateTextureDimensions(width, height);
-
-	std::cout << "SPOUT SENDING TEXTURE " << textureWidth << ", " << textureHeight << std::endl;
-
-	spoutSender.SendTexture(glTex, GL_TEXTURE_2D, textureWidth, textureHeight);
-}
-
-void SpoutView3D::ImageDataSender::destroy()
-{
-	destroySender();
-}
-void SpoutView3D::ImageDataSender::destroySender()
-{
-	spoutSender.ReleaseSender();
-}
-
-
-// OSC receive messages
-
-template <typename T>
-void pushToVec(std::vector<char>& vec, T val)
-{
-	char* ptr = reinterpret_cast<char*>(&val);
-
-	for (size_t i = 0; i < sizeof(T); i++)
-		vec.push_back(*(ptr++));
-}
-
-void SpoutView3D::OscPacketListener::ProcessMessage(
-	const osc::ReceivedMessage& msg,
-	const IpEndpointName& remoteEndpoint)
-{
-	m_data.reserve(128); // ought to be enough for two 4x4 floating point matrices
-
-	osc::ReceivedMessage::const_iterator it = msg.ArgumentsBegin();
-
-	if (std::string(msg.AddressPattern()).find("Camera/") == std::string::npos)
-		return;
-
-	std::cout << "Received OSC Message, Address: " << msg.AddressPattern() << std::endl;
-
-	while (it != msg.ArgumentsEnd())
-	{
-		if(it->IsFloat())
-		{
-			float f = it++->AsFloat();
-			pushToVec(m_data, f);
-		}
-		else
-		if(it->IsInt32())
-		{
-			int i = it++->AsInt32();
-			pushToVec(m_data, i);
-		}
-	}
-
-	// for now, we only receive camera configurations. so it is ok to do the following.
-	// for the general case, we may want to organize the received data structures in some sort of map,
-	// addressed/indexed by the message name and suited for async thread-safe lookup of new data dumps.
-	CameraConfig tmp;
-	std::memcpy(&tmp, m_data.data(), sizeof(CameraConfig));
-
-	if (std::string(msg.AddressPattern()).find("Mono") != std::string::npos)
-	{
-		monoCam.exchange(tmp); // atomic data exchange
-	}
-	else 
-	if (std::string(msg.AddressPattern()).find("StereoL") != std::string::npos)
-	{
-		stereoLCam.exchange(tmp);
-	}
-	else 
-	if (std::string(msg.AddressPattern()).find("StereoR") != std::string::npos)
-	{
-		stereoRCam.exchange(tmp);
-	}
-
-	this->m_data.clear();
-
-	m_hasData = true;
-}
-
-// later, we may want to retrieve more than just camera configs from the OSC receiver channel. this is what this method is planned for.
-template<>
-SpoutView3D::CameraConfig SpoutView3D::OscPacketListener::getData()
-{
-	this->unsetDataFlag();
-	return monoCam.load();
-	// CameraConfig ret;
-
-	// if(m_data.size() * sizeof(char) != sizeof(CameraConfig))
-	// 	return ret;
-
-	// std::memcpy(&ret, m_data.data(), sizeof(CameraConfig));
-
-	// this->unsetDataFlag();
-	// this->m_data.clear(); // osc part receives only when array cleared
-	// return ret;
+    cam.SetScale(1.0f);//conf.dataBboxScale);
 }
 
