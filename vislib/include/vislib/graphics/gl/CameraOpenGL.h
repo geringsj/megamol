@@ -17,6 +17,7 @@
 
 
 #include "vislib/graphics/Camera.h"
+#include "vislib/math/Quaternion.h"
 
 
 namespace vislib {
@@ -175,10 +176,12 @@ namespace gl {
 			See implementation of CameraOpenGL::ViewMatrix(float *mat)*/
 		mutable float uniformScaleFacor = 1.0;
         mutable math::Vector<SceneSpaceType, 3> modelTranslate; // initially 0
+        mutable math::Quaternion<SceneSpaceType> modelRotation;
 
 		public:
 			void SetScale(const float scale) { this->uniformScaleFacor = scale; }
 			void SetTranslate(const math::Vector<SceneSpaceType, 3> translation) { this->modelTranslate = translation; }
+			void SetRotate(const math::Quaternion<SceneSpaceType> rotation) { this->modelRotation = rotation; }
     };
     
 } /* end namespace gl */

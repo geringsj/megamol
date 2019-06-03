@@ -13,6 +13,7 @@
 
 #include "vislib/assert.h"
 #include "vislib/math/ShallowMatrix.h"
+#include "vislib/math/Matrix.h"
 
 
 /*
@@ -178,7 +179,7 @@ void vislib::graphics::gl::CameraOpenGL::ViewMatrix(float *mat) const {
     matrix.SetAt(1, 3, -yAxis.Dot(eye));
     matrix.SetAt(2, 3, -zAxis.Dot(eye));
 
-	// build scale matrix
+	// build translate, scale, rotate matrix
 	float translateMat[16] = { 0.0f };
     math::ShallowMatrix<float, 4, math::COLUMN_MAJOR> translateMatrix(translateMat);
     translateMatrix.SetAt(0, 0, 1.0f);
@@ -196,10 +197,13 @@ void vislib::graphics::gl::CameraOpenGL::ViewMatrix(float *mat) const {
     scaleMatrix.SetAt(2, 2, this->uniformScaleFacor);
     scaleMatrix.SetAt(3, 3, 1.0f);
 
+    math::Matrix<float, 4, math::COLUMN_MAJOR> rotateMatrix(this->modelRotation);
+    rotateMatrix.SetAt(3, 3, 1.0f);
+
 	// multiply scaling to the right of view matrix
 	float result[16] = { 0.0f };
     math::ShallowMatrix<float, 4, math::COLUMN_MAJOR> resultMatrix(result);
-	resultMatrix = matrix * scaleMatrix * translateMatrix;
+	resultMatrix = matrix * translateMatrix * scaleMatrix * rotateMatrix;
 
 	// overwrite returned result
 	matrix = resultMatrix;
