@@ -175,8 +175,8 @@ namespace gl {
 		    For now, do this via a hack in the view matrix.
 			See implementation of CameraOpenGL::ViewMatrix(float *mat)*/
 		mutable float uniformScaleFacor = 1.0;
-        mutable math::Vector<SceneSpaceType, 3> modelTranslate; // initially 0
-        mutable math::Quaternion<SceneSpaceType> modelRotation;
+    mutable math::Vector<SceneSpaceType, 3> modelTranslate{0.0f, 0.0f, 0.0f}; // initially 0
+    mutable math::Quaternion<SceneSpaceType> modelRotation{0.0f, 0.0f, 0.0f, 1.0f};
 
 		public:
 			void SetScale(const float scale) { this->uniformScaleFacor = scale; }
