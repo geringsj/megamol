@@ -17,6 +17,7 @@
 #include "GUIUtils.h"
 #include "TransferFunctionEditor.h"
 #include "WindowManager.h"
+#include "../../../_deps/mwk-mint-src/interop/include/interop.hpp"
 
 /// CMake exeption for the cluster "stampede2" running CentOS. (C++ filesystem support is not working?)
 #ifdef GUI_USE_FILEUTILS
@@ -177,6 +178,8 @@ private:
     std::map<std::string, vislib::math::Vector<float, 3>> widgtmap_vec3;
     std::map<std::string, vislib::math::Vector<float, 4>> widgtmap_vec4;
 
+	//interop::DataSender m_boolSender;
+
     // FUNCTIONS --------------------------------------------------------------
 
     /**
@@ -246,6 +249,8 @@ private:
      * @param slot  The current parameter slot.
      */
     void drawParameter(const core::Module& mod, core::param::ParamSlot& slot);
+
+    //void getRenderMode();
 
     /**
      * Transfer function edit widget.

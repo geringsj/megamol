@@ -44,6 +44,7 @@
 #include "imgui_impl_opengl3.h"
 #include "imgui_stdlib.h"
 
+
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
@@ -54,6 +55,8 @@
 
 using namespace megamol;
 using namespace megamol::gui;
+// using namespace megamol::vrinterop;
+using namespace megamol::core;
 using vislib::sys::Log;
 
 
@@ -1138,6 +1141,16 @@ void GUIView::drawParametersCallback(const std::string& wn, WindowManager::Windo
 
     ImGui::PopItemWidth();
 }
+
+//void GUIView::getRenderMode() {
+//    this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
+//        if (auto* p = slot.template Param<core::param::BoolParam>()) {
+//            auto value = p->Value();
+//            auto visbool = interop::VisBool{value};
+//            m_boolSender.sendData<interop::VisBool>("VisBool", visbool);
+//        }
+//    });
+//}
 
 
 void GUIView::drawFpsWindowCallback(const std::string& wn, WindowManager::WindowConfiguration& wc) {

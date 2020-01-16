@@ -44,7 +44,9 @@ public:
      * @return A human readable description of this module.
      */
     static const char* Description(void) {
-        return "3D View Module which broadcasts stereo FBO contents to other applications via Spout and allows external control of camera via Json messages over ZMQ. This module is to be used instead of View3D_2 views in projects.";
+        return "3D View Module which broadcasts stereo FBO contents to other applications via Spout and allows "
+               "external control of camera via Json messages over ZMQ. This module is to be used instead of View3D_2 "
+               "views in projects.";
     }
 
     /**
@@ -90,31 +92,38 @@ public:
     using FramebufferObject = vislib::graphics::gl::FramebufferObject;
 
 private:
-
     std::string m_interopSenderId{"/UnityInterop/MegaMol/"};
 
     interop::BoundingBoxCorners m_dataBbox;
+    interop::VisBool m_testReceiver;
     interop::StereoCameraView m_stereoCamView;
     interop::CameraProjection m_cameraProjection;
     interop::ModelPose m_datasetPose;
-	interop::DataReceiver m_stereoViewReceiver;
-	interop::DataReceiver m_camProjectionReceiver;
-	interop::DataReceiver m_datasetPoseReceiver;
-	interop::DataSender m_bboxSender;
+    interop::DataReceiver m_stereoViewReceiver;
+    interop::DataReceiver m_camProjectionReceiver;
+    interop::DataReceiver m_datasetPoseReceiver;
+    interop::DataSender m_bboxSender;
+	interop::DataSender m_boolSender;
+    interop::DataSender m_vec4Sender;
 
     using FramebufferObject = vislib::graphics::gl::FramebufferObject;
     FramebufferObject m_stereoFBO_L, m_stereoFBO_R;
     interop::TextureSender m_stereoImageSender_L;
     interop::TextureSender m_stereoImageSender_R;
 
-    void applyCameraConfig(Camera::minimal_state_type& cam, const interop::CameraView& view, const interop::CameraProjection proj, interop::ModelPose& pose);
+    void applyCameraConfig(Camera::minimal_state_type& cam, const interop::CameraView& view,
+        const interop::CameraProjection proj, interop::ModelPose& pose);
 
-	GLint m_fbWidth = 1, m_fbHeight = 1;
-	bool isNewFbSize(unsigned int width, unsigned int height);
+    GLint m_fbWidth = 1, m_fbHeight = 1;
+    bool isNewFbSize(unsigned int width, unsigned int height);
     void broadcastFramebuffer(FramebufferObject& fbo, interop::TextureSender& textureSender);
     void renderFromCamera(const Camera::minimal_state_type& viewCamera, const mmcRenderViewContext& context);
     void doBboxDataShare(const mmcRenderViewContext& context);
+    void doParameterShare(const mmcRenderViewContext& context);
+    void getRenderMode();
     bool oneTimeDataIsShared = false;
+
+	
 
     // we overwrite the view camera / camera parameters with our settings
     // and call the View3D::Render() implementation to produce the image we need
