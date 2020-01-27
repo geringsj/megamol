@@ -474,15 +474,16 @@ void from_json(const json& j, DatasetRenderConfiguration& v) {
 
 void to_json(json& j, const VisBool& v) { 
 	j = json{
-		//writeVal(b), 
-		//writeVal(name), 
-		writeVal(length)}; 
+		writeVal(b), 
+		writeVal(name), 
+		//writeVal(length) 
+	};
 }
 
 void from_json(const json& j, VisBool& v) { 
-	//readVal(b);
-    //readVal(name);
-    readVal(length);
+	readVal(b);
+    readVal(name);
+    //readVal(length);
 }
 
 } // namespace interop

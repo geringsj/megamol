@@ -175,7 +175,7 @@ void megamol::vrinterop::VrInteropView3D_2::doBboxDataShare(const mmcRenderViewC
 
     m_bboxSender.sendData<interop::BoundingBoxCorners>("BoundingBoxCorners", m_dataBbox);
     // m_bboxSender.sendData<interop::BoundingBoxCorners>("Alpha", m_dataBbox);
-    vislib::sys::Log::DefaultLog.WriteError("[View3D] Finished");
+    //vislib::sys::Log::DefaultLog.WriteError("[View3D] Finished");
     /*doParameterShare(context);
     vislib::sys::Log::DefaultLog.WriteError("[View3D] Finished");*/
     /*getRenderMode();
@@ -183,50 +183,61 @@ void megamol::vrinterop::VrInteropView3D_2::doBboxDataShare(const mmcRenderViewC
 }
 
 void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderViewContext& context) {
-    interop::VisBool visbool = interop::VisBool{/*true, "test", */5};
-    vislib::sys::Log::DefaultLog.WriteError("[View3D] interop::VisBool{true}; %i", visbool.length);
-    m_testReceiver = visbool;
-    m_bboxSender.sendData<interop::VisBool>("ReceiveTest", m_testReceiver);
-    interop::vec4 vec4test{
-        1.0f,
-        1.0f,
-        1.0f,
-        0.0f
-    };
-    m_bboxSender.sendData<interop::vec4>("Vec4Test", vec4test);
-    vislib::sys::Log::DefaultLog.WriteError("[View3D] Send VisBool");
+    //interop::VisBool visbool = interop::VisBool{/*true, "test", */5};
+    ////vislib::sys::Log::DefaultLog.WriteError("[View3D] interop::VisBool{true}; %i", visbool.length);
+    //m_testReceiver = visbool;
+    //m_bboxSender.sendData<interop::VisBool>("ReceiveTest", m_testReceiver);
+    //interop::vec4 vec4test{
+    //    1.0f,
+    //    1.0f,
+    //    1.0f,
+    //    0.0f
+    //};
+    //m_bboxSender.sendData<interop::vec4>("Vec4Test", vec4test);
+    //vislib::sys::Log::DefaultLog.WriteError("[View3D] Send VisBool");
+    getRenderMode();
 }
 
 void megamol::vrinterop::VrInteropView3D_2::getRenderMode() {
-    // try {
-    //    this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
-    //        auto param = slot.Parameter();
-    //        if (!param.IsNull()) {
-    //            vislib::sys::Log::DefaultLog.WriteError("[View3D] Looking for VisBool");
-    //
-    // if (auto* p = slot.template Param<core::param::BoolParam>()) {
-    //                vislib::sys::Log::DefaultLog.WriteError("[View3D] Found VisBool, %s", p->Value());
-    //                bool value = p->Value();
-    //                vislib::sys::Log::DefaultLog.WriteError("[View3D] auto value = p->Value(), value = %s", value);
-    //                if (value) {
+     try {
+        this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
+			vislib::sys::Log::DefaultLog.WriteError("[View3D] modul name: %s", mod.FullName());
+            auto param = slot.Parameter();
+            if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer")) {
 
-    //                    auto visbool = interop::VisBool{value};
-    //                    vislib::sys::Log::DefaultLog.WriteError("[View3D] auto visbool = interop::VisBool{value}");
-    //                    vislib::sys::Log::DefaultLog.WriteError("[View3D] visbool = %s", visbool);
-    //                    m_boolSender.sendData<interop::VisBool>("VisBool", visbool);
-    //                    vislib::sys::Log::DefaultLog.WriteError("[View3D] Send VisBool");
-    //                }
-    //            }
-    //        }
-    //    });
-    //} catch (const std::exception& e) {
-    //    vislib::sys::Log::DefaultLog.WriteError("[View3D] Exception: %s", e.what());
-    //}
-    interop::VisBool visbool = interop::VisBool{/*true, "test",*/ 5};
-    vislib::sys::Log::DefaultLog.WriteError("[View3D] interop::VisBool{true}; %d", visbool.length);
-    m_testReceiver = visbool;
-    m_boolSender.sendData<interop::VisBool>("ReceiveTest", m_testReceiver);
-    vislib::sys::Log::DefaultLog.WriteError("[View3D] Send VisBool");
+            if (!param.IsNull()) {
+                vislib::sys::Log::DefaultLog.WriteError("[View3D] Looking for VisBool");
+                
+                if (auto* p = slot.template Param<core::param::BoolParam>() ) {
+					
+                    vislib::sys::Log::DefaultLog.WriteError("[View3D] Found VisBool, %s", p->Value());
+                    bool value = p->Value();
+                    vislib::sys::Log::DefaultLog.WriteError("[View3D] auto value = p->Value(), value = %s", value);
+					
+					interop::VisBool param{value, slot.Name().PeekBuffer()};
+                    m_bboxSender.sendData<interop::VisBool>("ReceiveTest", param);
+                    vislib::sys::Log::DefaultLog.WriteError("[View3D] VisBool sent");
+                    
+                }
+				}
+     
+            }
+        });
+    } catch (const std::exception& e) {
+        vislib::sys::Log::DefaultLog.WriteError("[View3D] Exception: %s", e.what());
+    }
+    //interop::VisBool visbool = interop::VisBool{/*true, "test",*/ 5};
+    //vislib::sys::Log::DefaultLog.WriteError("[View3D] interop::VisBool{true}; ");
+    //m_testReceiver = visbool;
+    //m_boolSender.sendData<interop::VisBool>("ReceiveTest", m_testReceiver);
+    //vislib::sys::Log::DefaultLog.WriteError("[View3D] Send VisBool");
+}
+
+bool megamol::vrinterop::VrInteropView3D_2::isModul(const std::string& modname, std::string searchedName) {
+    bool retval = false;
+    // Empty module list means that all modules should be considered.
+    retval = (modname.find(searchedName) != std::string::npos);
+    return retval;
 }
 
 void megamol::vrinterop::VrInteropView3D_2::broadcastFramebuffer(
@@ -256,7 +267,7 @@ bool VrInteropView3D_2::create(void) {
 
     const std::string baseAdr = {"tcp://127.0.0.1"};
     const std::string recvPort = {":12345"};
-    const std::string sendPort = {":12346"}; //TODO: neuer Port
+    const std::string sendPort = {":12346"};
 
     // inherit initial camera parameters
     Camera::minimal_state_type camParams;

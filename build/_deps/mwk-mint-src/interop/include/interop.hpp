@@ -193,9 +193,9 @@ struct BoundingBoxCorners {
 };
 
 struct VisBool {
-    //bool b;
-    //std::string name;
-    int length;
+    bool b;
+    std::string name;
+    //int length;
 };
 
 // converter functions to fill inteorp struct from Json string received by DataReceiver

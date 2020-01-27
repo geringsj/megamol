@@ -121,6 +121,7 @@ private:
     void doBboxDataShare(const mmcRenderViewContext& context);
     void doParameterShare(const mmcRenderViewContext& context);
     void getRenderMode();
+    bool isModul(const std::string& modname, std::string searchedName);
     bool oneTimeDataIsShared = false;
 
 	

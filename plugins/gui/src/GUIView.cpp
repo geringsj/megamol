@@ -481,7 +481,6 @@ bool GUIView::OnKey(core::view::Key key, core::view::KeyAction action, core::vie
             current_mod = &mod;
             consider_module = this->considerModule(mod.FullName().PeekBuffer(), modules_list);
         }
-
         if (consider_module) {
             auto param = slot.Parameter();
             if (!param.IsNull()) {
