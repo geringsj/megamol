@@ -82,6 +82,15 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
     bool hasModelPose = m_datasetPoseReceiver.getData<interop::ModelPose>(m_datasetPose);
     hasModelPose = true; // for now, we use relative dataset positioning from unity - no model matrix is sent.
     bool hasCamView = m_stereoViewReceiver.getData<interop::StereoCameraView>(m_stereoCamView);
+
+	interop::ParameterInt m_testParam;
+    bool hasTest = m_TestReceiver.getData<interop::ParameterInt>(m_testParam);
+    //bool hasTest = m_TestReceiver.getData<interop::ParameterInt>(m_testParam);
+    if (hasTest) {
+        vislib::sys::Log::DefaultLog.WriteError("[View3D] reseave param: %s", m_testParam.name);
+        vislib::sys::Log::DefaultLog.WriteError("[View3D] reseave param modul name: %s", m_testParam.modulFullName);
+	}
+
     static bool hasCamProj = m_camProjectionReceiver.getData<interop::CameraProjection>(m_cameraProjection);
 
     if (hasCamView && hasCamProj && hasModelPose) {
@@ -281,6 +290,7 @@ bool VrInteropView3D_2::create(void) {
     m_stereoViewReceiver.start(radr, "StereoCameraViewRelative");
     m_camProjectionReceiver.start(radr, "CameraProjection");
     m_datasetPoseReceiver.start(radr, "ModelPose");
+    m_TestReceiver.start(radr, "ReceiveTest");
 
     const auto sadr = baseAdr + sendPort;
     
@@ -312,6 +322,7 @@ void VrInteropView3D_2::release(void) {
     m_stereoViewReceiver.stop();
     m_camProjectionReceiver.stop();
     m_datasetPoseReceiver.stop();
+    m_TestReceiver.stop();
     m_bboxSender.stop();
     m_boolSender.stop();
     m_vec4Sender.stop();

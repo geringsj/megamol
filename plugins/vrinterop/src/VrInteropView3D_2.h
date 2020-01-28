@@ -102,6 +102,7 @@ private:
     interop::DataReceiver m_stereoViewReceiver;
     interop::DataReceiver m_camProjectionReceiver;
     interop::DataReceiver m_datasetPoseReceiver;
+    interop::DataReceiver m_TestReceiver;
     interop::DataSender m_bboxSender;
 	interop::DataSender m_boolSender;
     interop::DataSender m_vec4Sender;
