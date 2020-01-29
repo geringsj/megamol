@@ -83,12 +83,36 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
     hasModelPose = true; // for now, we use relative dataset positioning from unity - no model matrix is sent.
     bool hasCamView = m_stereoViewReceiver.getData<interop::StereoCameraView>(m_stereoCamView);
 
-	interop::ParameterInt m_testParam;
-    bool hasTest = m_TestReceiver.getData<interop::ParameterInt>(m_testParam);
+	interop::VisBool m_testParam;
+    bool hasTest = m_TestReceiver.getData<interop::VisBool>(m_testParam);
     //bool hasTest = m_TestReceiver.getData<interop::ParameterInt>(m_testParam);
+
+	vislib::sys::Log::DefaultLog.WriteError("[View3D] succesful received: %s", hasTest ? "true" : "false");
+
     if (hasTest) {
-        vislib::sys::Log::DefaultLog.WriteError("[View3D] reseave param: %s", m_testParam.name);
-        vislib::sys::Log::DefaultLog.WriteError("[View3D] reseave param modul name: %s", m_testParam.modulFullName);
+        //vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_testParam.name);
+        //vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param modul name: %s", m_testParam.b ? "true" : "false");
+
+		this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
+
+			auto param = slot.Parameter();
+            std::string slotName = slot.Name().PeekBuffer();
+
+			vislib::sys::Log::DefaultLog.WriteError(
+                "[View3D] slotName %s", slotName);
+            if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer") && slotName.compare("useLocalBbox") == 0) {
+
+                if (!param.IsNull()) {
+
+                    if (auto* p = slot.template Param<core::param::BoolParam>()) {
+
+                        p->SetValue(m_testParam.b);
+                        vislib::sys::Log::DefaultLog.WriteError(
+                            "[View3D] bool param changed to %s", m_testParam.b ? "true" : "false");
+                    }
+                }
+            }
+        });
 	}
 
     static bool hasCamProj = m_camProjectionReceiver.getData<interop::CameraProjection>(m_cameraProjection);
@@ -210,22 +234,23 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 void megamol::vrinterop::VrInteropView3D_2::getRenderMode() {
      try {
         this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
-			vislib::sys::Log::DefaultLog.WriteError("[View3D] modul name: %s", mod.FullName());
+			//vislib::sys::Log::DefaultLog.WriteError("[View3D] modul name: %s", mod.FullName());
             auto param = slot.Parameter();
-            if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer")) {
+			std::string slotName = slot.Name().PeekBuffer();
+            if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer")&& slotName.compare("useLocalBbox") == 0) {
 
             if (!param.IsNull()) {
-                vislib::sys::Log::DefaultLog.WriteError("[View3D] Looking for VisBool");
+                //vislib::sys::Log::DefaultLog.WriteError("[View3D] Looking for VisBool");
                 
                 if (auto* p = slot.template Param<core::param::BoolParam>() ) {
 					
-                    vislib::sys::Log::DefaultLog.WriteError("[View3D] Found VisBool, %s", p->Value());
+                    //vislib::sys::Log::DefaultLog.WriteError("[View3D] Found VisBool, %s", p->Value());
                     bool value = p->Value();
-                    vislib::sys::Log::DefaultLog.WriteError("[View3D] auto value = p->Value(), value = %s", value);
+                    //vislib::sys::Log::DefaultLog.WriteError("[View3D] auto value = p->Value(), value = %s", value);
 					
 					interop::VisBool param{value, slot.Name().PeekBuffer()};
                     m_bboxSender.sendData<interop::VisBool>("ReceiveTest", param);
-                    vislib::sys::Log::DefaultLog.WriteError("[View3D] VisBool sent");
+                    //vislib::sys::Log::DefaultLog.WriteError("[View3D] VisBool sent");
                     
                 }
 				}
@@ -290,7 +315,7 @@ bool VrInteropView3D_2::create(void) {
     m_stereoViewReceiver.start(radr, "StereoCameraViewRelative");
     m_camProjectionReceiver.start(radr, "CameraProjection");
     m_datasetPoseReceiver.start(radr, "ModelPose");
-    m_TestReceiver.start(radr, "ReceiveTest");
+    m_TestReceiver.start(radr, "SendTest");
 
     const auto sadr = baseAdr + sendPort;
     
