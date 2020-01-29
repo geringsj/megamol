@@ -5,7 +5,6 @@
 #include "SpoutSender.h"
 
 #include <iostream>
-#include <iostream>
 
 using json = nlohmann::json;
 
@@ -472,25 +471,20 @@ void from_json(const json& j, DatasetRenderConfiguration& v) {
     readObj(modelTransform);
 }
 
-void to_json(json& j, const VisBool& v) { 
-	j = json{
-		writeVal(b), 
-		writeVal(name), 
-		//writeVal(length) 
-	};
-}
-
-void from_json(const json& j, VisBool& v) { 
-	readVal(b);
-    readVal(name);
-    //readVal(length);
-}
-
-void to_json(json& j, const ParameterInt& v) {
+void to_json(json& j, const VisBool& v) {
     j = json{
-        writeVal(param), writeVal(name), writeVal(modulFullName)
+        writeVal(b), writeVal(name),
+        // writeVal(length)
     };
 }
+
+void from_json(const json& j, VisBool& v) {
+    readVal(b);
+    readVal(name);
+    // readVal(length);
+}
+
+void to_json(json& j, const ParameterInt& v) { j = json{writeVal(param), writeVal(name), writeVal(modulFullName)}; }
 
 void from_json(const json& j, ParameterInt& v) {
     readVal(param);

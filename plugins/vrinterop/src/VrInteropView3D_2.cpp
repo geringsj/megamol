@@ -87,7 +87,7 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
     bool hasTest = m_TestReceiver.getData<interop::VisBool>(m_testParam);
     //bool hasTest = m_TestReceiver.getData<interop::ParameterInt>(m_testParam);
 
-	vislib::sys::Log::DefaultLog.WriteError("[View3D] succesful received: %s", hasTest ? "true" : "false");
+	//vislib::sys::Log::DefaultLog.WriteError("[View3D] succesful received: %s", hasTest ? "true" : "false");
 
     if (hasTest) {
         //vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_testParam.name);
@@ -98,8 +98,7 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 			auto param = slot.Parameter();
             std::string slotName = slot.Name().PeekBuffer();
 
-			vislib::sys::Log::DefaultLog.WriteError(
-                "[View3D] slotName %s", slotName);
+			//vislib::sys::Log::DefaultLog.WriteError(               "[View3D] slotName %s", slotName);
             if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer") && slotName.compare("useLocalBbox") == 0) {
 
                 if (!param.IsNull()) {
