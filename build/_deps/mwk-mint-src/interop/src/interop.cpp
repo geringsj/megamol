@@ -492,6 +492,14 @@ void from_json(const json& j, ParameterInt& v) {
     readVal(modulFullName);
 }
 
+void to_json(json& j, const ParameterBool& v) { j = json{writeVal(param), writeVal(name), writeVal(modulFullName)}; }
+
+void from_json(const json& j, ParameterBool& v) {
+    readVal(param);
+    readVal(name);
+    readVal(modulFullName);
+}
+
 } // namespace interop
 
 #define make_dataGet(DataTypeName)                                                                                     \
@@ -515,6 +523,7 @@ make_dataGet(interop::BoundingBoxCorners) make_dataGet(interop::DatasetRenderCon
         make_dataGet(interop::CameraConfiguration) make_dataGet(interop::CameraProjection)
             make_dataGet(interop::StereoCameraView) make_dataGet(interop::CameraView) make_dataGet(interop::mat4)
                 make_dataGet(interop::vec4) make_dataGet(interop::VisBool) make_dataGet(interop::ParameterInt)
+                    make_dataGet(interop::ParameterBool)
 #undef make_dataGet
 
 #define make_sendData(DataTypeName)                                                                                    \
@@ -532,6 +541,7 @@ make_dataGet(interop::BoundingBoxCorners) make_dataGet(interop::DatasetRenderCon
             make_sendData(interop::CameraConfiguration) make_sendData(interop::CameraProjection)
                 make_sendData(interop::StereoCameraView) make_sendData(interop::CameraView) make_sendData(interop::mat4)
                     make_sendData(interop::vec4) make_sendData(interop::VisBool) make_sendData(interop::ParameterInt)
+                        make_sendData(interop::ParameterBool)
 #undef make_sendData
 
     // interop::vec4 arithmetic operators

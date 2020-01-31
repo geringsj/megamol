@@ -203,6 +203,8 @@ template <typename T> struct Parameter {
     std::string modulFullName;
 };
 typedef Parameter<int> ParameterInt;
+typedef Parameter<bool> ParameterBool;
+
 
 // converter functions to fill inteorp struct from Json string received by DataReceiver
 #define make_dataGet(DataTypeName) template <> bool DataReceiver::getData<DataTypeName>(DataTypeName & v);
@@ -210,7 +212,7 @@ typedef Parameter<int> ParameterInt;
 make_dataGet(BoundingBoxCorners) make_dataGet(DatasetRenderConfiguration) make_dataGet(ModelPose)
     make_dataGet(StereoCameraConfiguration) make_dataGet(CameraConfiguration) make_dataGet(CameraProjection)
         make_dataGet(StereoCameraView) make_dataGet(CameraView) make_dataGet(mat4) make_dataGet(vec4)
-            make_dataGet(VisBool) make_dataGet(ParameterInt)
+            make_dataGet(VisBool) make_dataGet(ParameterInt) make_dataGet(ParameterBool)
 #undef make_dataGet
 
 #define make_sendData(DataTypeName)                                                                                    \
@@ -220,6 +222,7 @@ make_dataGet(BoundingBoxCorners) make_dataGet(DatasetRenderConfiguration) make_d
                     make_sendData(StereoCameraConfiguration) make_sendData(CameraConfiguration)
                         make_sendData(CameraProjection) make_sendData(StereoCameraView) make_sendData(CameraView)
                             make_sendData(mat4) make_sendData(vec4) make_sendData(VisBool) make_sendData(ParameterInt)
+                                make_sendData(ParameterBool)
 #undef make_sendData
 
 } // namespace interop

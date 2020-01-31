@@ -83,31 +83,32 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
     hasModelPose = true; // for now, we use relative dataset positioning from unity - no model matrix is sent.
     bool hasCamView = m_stereoViewReceiver.getData<interop::StereoCameraView>(m_stereoCamView);
 
-	interop::VisBool m_testParam;
-    bool hasTest = m_TestReceiver.getData<interop::VisBool>(m_testParam);
+	interop::ParameterBool m_testParam;
+    bool hasTest = m_TestReceiver.getData<interop::ParameterBool>(m_testParam);
     //bool hasTest = m_TestReceiver.getData<interop::ParameterInt>(m_testParam);
 
-	//vislib::sys::Log::DefaultLog.WriteError("[View3D] succesful received: %s", hasTest ? "true" : "false");
+	
 
     if (hasTest) {
-        //vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_testParam.name);
-        //vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param modul name: %s", m_testParam.b ? "true" : "false");
+        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_testParam.name);
+        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param modul name: %s", m_testParam.param ? "true" : "false");
 
 		this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
 
 			auto param = slot.Parameter();
             std::string slotName = slot.Name().PeekBuffer();
+            std::string modName = mod.FullName().PeekBuffer();
 
 			//vislib::sys::Log::DefaultLog.WriteError(               "[View3D] slotName %s", slotName);
-            if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer") && slotName.compare("useLocalBbox") == 0) {
+            if (modName.compare(m_testParam.modulFullName) == 0 && slotName.compare(m_testParam.name) == 0) {
 
                 if (!param.IsNull()) {
 
                     if (auto* p = slot.template Param<core::param::BoolParam>()) {
 
-                        p->SetValue(m_testParam.b);
+                        p->SetValue(m_testParam.param);
                         vislib::sys::Log::DefaultLog.WriteError(
-                            "[View3D] bool param changed to %s", m_testParam.b ? "true" : "false");
+                            "[View3D] bool param changed to %s", m_testParam.param ? "true" : "false");
                     }
                 }
             }
@@ -215,18 +216,23 @@ void megamol::vrinterop::VrInteropView3D_2::doBboxDataShare(const mmcRenderViewC
 }
 
 void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderViewContext& context) {
-    //interop::VisBool visbool = interop::VisBool{/*true, "test", */5};
-    ////vislib::sys::Log::DefaultLog.WriteError("[View3D] interop::VisBool{true}; %i", visbool.length);
-    //m_testReceiver = visbool;
-    //m_bboxSender.sendData<interop::VisBool>("ReceiveTest", m_testReceiver);
-    //interop::vec4 vec4test{
-    //    1.0f,
-    //    1.0f,
-    //    1.0f,
-    //    0.0f
-    //};
-    //m_bboxSender.sendData<interop::vec4>("Vec4Test", vec4test);
-    //vislib::sys::Log::DefaultLog.WriteError("[View3D] Send VisBool");
+    //this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
+    //    auto param = slot.Parameter();
+    //    std::string slotName = slot.Name().PeekBuffer();
+
+    //    /*if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer") && slotName.compare("useLocalBbox") == 0) {
+
+    //        if (!param.IsNull()) {
+
+    //            if (auto* p = slot.template Param<core::param::BoolParam>()) {
+
+    //                p->SetValue(m_testParam.param);
+    //                vislib::sys::Log::DefaultLog.WriteError(
+    //                    "[View3D] bool param changed to %s", m_testParam.param ? "true" : "false");
+    //            }
+    //        }
+    //    }*/
+    //});
     getRenderMode();
 }
 
@@ -247,8 +253,8 @@ void megamol::vrinterop::VrInteropView3D_2::getRenderMode() {
                     bool value = p->Value();
                     //vislib::sys::Log::DefaultLog.WriteError("[View3D] auto value = p->Value(), value = %s", value);
 					
-					interop::VisBool param{value, slot.Name().PeekBuffer()};
-                    m_bboxSender.sendData<interop::VisBool>("ReceiveTest", param);
+					interop::ParameterBool param{value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer()};
+                    m_bboxSender.sendData<interop::ParameterBool>("ReceiveTest", param);
                     //vislib::sys::Log::DefaultLog.WriteError("[View3D] VisBool sent");
                     
                 }
