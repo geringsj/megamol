@@ -242,25 +242,32 @@ void megamol::vrinterop::VrInteropView3D_2::getRenderMode() {
 			//vislib::sys::Log::DefaultLog.WriteError("[View3D] modul name: %s", mod.FullName());
             auto param = slot.Parameter();
 			std::string slotName = slot.Name().PeekBuffer();
-            if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer")&& slotName.compare("useLocalBbox") == 0) {
 
-            if (!param.IsNull()) {
-                //vislib::sys::Log::DefaultLog.WriteError("[View3D] Looking for VisBool");
-                
-                if (auto* p = slot.template Param<core::param::BoolParam>() ) {
-					
-                    //vislib::sys::Log::DefaultLog.WriteError("[View3D] Found VisBool, %s", p->Value());
-                    bool value = p->Value();
-                    //vislib::sys::Log::DefaultLog.WriteError("[View3D] auto value = p->Value(), value = %s", value);
-					
-					interop::ParameterBool param{value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer()};
-                    m_bboxSender.sendData<interop::ParameterBool>("ReceiveTest", param);
-                    //vislib::sys::Log::DefaultLog.WriteError("[View3D] VisBool sent");
-                    
+            if (!slotName.empty()) {
+                /*vislib::sys::Log::DefaultLog.WriteError("[View3D] mod name: %s", mod.FullName().PeekBuffer());
+                vislib::sys::Log::DefaultLog.WriteError(
+                    "[View3D] slot name: %s", (slotName.compare("enableBoundingBox") == 0 ? "true" : "false"));*/
+
+                if (isModul(mod.FullName().PeekBuffer(), "BoundingBoxRenderer") &&
+                    slotName.compare("enableBoundingBox") == 0) {
+
+                    if (!param.IsNull()) {
+                        // vislib::sys::Log::DefaultLog.WriteError("[View3D] Looking for VisBool");
+
+                        if (auto* p = slot.template Param<core::param::BoolParam>()) {
+
+                            // vislib::sys::Log::DefaultLog.WriteError("[View3D] Found VisBool, %s", p->Value());
+                            bool value = p->Value();
+                            // vislib::sys::Log::DefaultLog.WriteError("[View3D] auto value = p->Value(), value = %s",
+                            // value);
+
+                            interop::ParameterBool param{value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer()};
+                            m_bboxSender.sendData<interop::ParameterBool>("ReceiveTest", param);
+                            // vislib::sys::Log::DefaultLog.WriteError("[View3D] VisBool sent");
+                        }
+                    }
                 }
-				}
-     
-            }
+			}
         });
     } catch (const std::exception& e) {
         vislib::sys::Log::DefaultLog.WriteError("[View3D] Exception: %s", e.what());
