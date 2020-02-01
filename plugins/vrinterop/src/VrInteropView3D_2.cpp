@@ -33,6 +33,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <string>
+#include <algorithm>
 
 using namespace megamol::vrinterop;
 using namespace megamol::core;
@@ -83,15 +84,26 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
     hasModelPose = true; // for now, we use relative dataset positioning from unity - no model matrix is sent.
     bool hasCamView = m_stereoViewReceiver.getData<interop::StereoCameraView>(m_stereoCamView);
 
-	interop::ParameterBool m_testParam;
-    bool hasTest = m_TestReceiver.getData<interop::ParameterBool>(m_testParam);
-    //bool hasTest = m_TestReceiver.getData<interop::ParameterInt>(m_testParam);
+	interop::ParameterBool m_boolParam;
+    bool hasReceivedBool = m_BoolReceiver.getData<interop::ParameterBool>(m_boolParam);
+    
+	interop::ParameterInt m_intParam;
+	bool hasReceivedInt = m_IntReceiver.getData<interop::ParameterInt>(m_intParam);
+
+	interop::ParameterFloat m_floatParam;
+	bool hasReceivedFloat = m_FloatReceiver.getData<interop::ParameterFloat>(m_floatParam);
+
+	interop::ParameterEnum m_enumParam;
+	bool hasReceivedEnum = m_EnumReceiver.getData<interop::ParameterEnum>(m_enumParam);
+
+	interop::ParameterVec3 m_vec3Param;
+	bool hasReceivedVec3 = m_Vec3Receiver.getData<interop::ParameterVec3>(m_vec3Param);
 
 	
 
-    if (hasTest) {
-        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_testParam.name);
-        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param modul name: %s", m_testParam.param ? "true" : "false");
+    if (hasReceivedBool || hasReceivedInt || hasReceivedFloat || hasReceivedEnum || hasReceivedVec3) {
+        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_boolParam.name);
+        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param modul name: %s", m_boolParam.param ? "true" : "false");
 
 		this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
 
@@ -100,17 +112,66 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
             std::string modName = mod.FullName().PeekBuffer();
 
 			//vislib::sys::Log::DefaultLog.WriteError(               "[View3D] slotName %s", slotName);
-            if (modName.compare(m_testParam.modulFullName) == 0 && slotName.compare(m_testParam.name) == 0) {
+            if (modName.compare(m_boolParam.modulFullName) == 0 && slotName.compare(m_boolParam.name) == 0) {
 
                 if (!param.IsNull()) {
 
+					bool test = ;
                     if (auto* p = slot.template Param<core::param::BoolParam>()) {
 
-                        p->SetValue(m_testParam.param);
+                        p->SetValue(m_boolParam.param);
                         vislib::sys::Log::DefaultLog.WriteError(
-                            "[View3D] bool param changed to %s", m_testParam.param ? "true" : "false");
+                            "[View3D] bool param %s in %s changed to %s", slotName, modName, (m_boolParam.param ? "true" : "false"));
                     }
+					else if (auto* p = slot.template Param<core::param::IntParam>()) {
+
+						p->SetValue(m_intParam.param);
+						vislib::sys::Log::DefaultLog.WriteError(
+							"[View3D] int param %s in %s changed to %d", slotName, modName, m_intParam.param);
+					}
+					else if (auto* p = slot.template Param<core::param::FloatParam>()) {
+
+						p->SetValue(m_floatParam.param);
+						vislib::sys::Log::DefaultLog.WriteError(
+							"[View3D] float param %s in %s changed to %d", slotName, modName, m_floatParam.param);
+					}
+					else if (auto* p = slot.template Param<core::param::Vector3fParam>()) {
+
+						vislib::math::Vector<float, 3> vec3 = { m_vec3Param.param[0], m_vec3Param.param[1], m_vec3Param.param[2]};
+
+						p->SetValue(vec3);
+						vislib::sys::Log::DefaultLog.WriteError(
+							"[View3D] vec3 param %s in %s changed to (%d, %d, %d)", slotName, modName, m_vec3Param.param[0], m_vec3Param.param[1], m_vec3Param.param[2]);
+					}
+					else if (auto* p = slot.template Param<core::param::EnumParam>()) {
+
+						std::string selectedValue = m_enumParam.param[0];
+						
+						auto map = p->getMap();
+						auto iter = map.GetConstIterator();
+
+						while (iter.HasNext()) {
+							auto pair = iter.Next();
+							bool equals= (pair.Value().compare(selectedValue) == 0);
+
+							if (equals) {
+								p->SetValue(pair.Key());
+							}
+						}
+
+						vislib::sys::Log::DefaultLog.WriteError(
+							"[View3D] enum param %s in %s changed to %s", slotName, modName, selectedValue);
+					}
+					else if (auto* p = slot.template Param<core::param::FlexEnumParam>()) {
+
+						std::string selectedValue = m_enumParam.param[0];
+
+						p->SetValue(selectedValue);
+						vislib::sys::Log::DefaultLog.WriteError(
+							"[View3D] flex enum param %s in %s changed to %s", slotName, modName, selectedValue);
+					}
                 }
+
             }
         });
 	}
@@ -216,24 +277,107 @@ void megamol::vrinterop::VrInteropView3D_2::doBboxDataShare(const mmcRenderViewC
 }
 
 void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderViewContext& context) {
-    //this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
-    //    auto param = slot.Parameter();
-    //    std::string slotName = slot.Name().PeekBuffer();
 
-    //    /*if (isModul(mod.FullName().PeekBuffer(), "SphereRenderer") && slotName.compare("useLocalBbox") == 0) {
+	std::list<std::string> modulsList{ "SphereRenderer", "RaycastVolumeRenderer", "BoundingBoxRenderer" };
 
-    //        if (!param.IsNull()) {
+    this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
 
-    //            if (auto* p = slot.template Param<core::param::BoolParam>()) {
+        auto param = slot.Parameter();
+        std::string slotName = slot.Name().PeekBuffer();
+		std::string modName = mod.FullName().PeekBuffer();
 
-    //                p->SetValue(m_testParam.param);
-    //                vislib::sys::Log::DefaultLog.WriteError(
-    //                    "[View3D] bool param changed to %s", m_testParam.param ? "true" : "false");
-    //            }
-    //        }
-    //    }*/
-    //});
-    getRenderMode();
+        if (containsModul(modulsList, modName)) { //(isModul(modName, "SphereRenderer") && slotName.compare("useLocalBbox") == 0) {
+
+            if (!param.IsNull()) {
+
+                if (auto* p = slot.template Param<core::param::BoolParam>()) {
+
+					bool value = p->Value();
+					interop::ParameterBool param{ value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer() };
+
+					m_bboxSender.sendData<interop::ParameterBool>("BoolReceiver", param);
+					
+					vislib::sys::Log::DefaultLog.WriteError(
+						"[View3D] sent int param (%s, %s, %s) to BoolReceiver", (param.param ? "true" : "false"), param.name, param.modulFullName);
+				}
+				else if (auto* p = slot.template Param<core::param::IntParam>()) {
+
+					int value = p->Value();
+					interop::ParameterInt param{ value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer() };
+
+					m_bboxSender.sendData<interop::ParameterInt>("IntReceiver", param);
+
+					vislib::sys::Log::DefaultLog.WriteError(
+						"[View3D] sent int param (%d, %s, %s) to IntReceiver", param.param, param.name, param.modulFullName);
+				}
+				else if (auto* p = slot.template Param<core::param::FloatParam>()) {
+
+					float value = p->Value();
+					interop::ParameterFloat param{ value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer() };
+
+					m_bboxSender.sendData<interop::ParameterFloat>("FloatReceiver", param);
+
+					vislib::sys::Log::DefaultLog.WriteError(
+						"[View3D] sent float param (%d, %s, %s) to FloatReceiver", param.param, param.name, param.modulFullName);
+				}
+				else if (auto* p = slot.template Param<core::param::Vector3fParam>()) {
+
+					vislib::math::Vector<float, 3> vec3 = p->Value();
+
+					std::vector<float> value = { vec3.x, vec3.y, vec3.z};
+					interop::ParameterVec3 param{ value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer() };
+
+					m_bboxSender.sendData<interop::ParameterVec3>("Vec3Receiver", param);
+
+					vislib::sys::Log::DefaultLog.WriteError(
+						"[View3D] sent vec3 param ((%d, %d, %d), %s, %s) to Vec3Receiver", param.param[0], param.param[1], param.param[2], param.name, param.modulFullName);
+				}
+				else if (auto* p = slot.template Param<core::param::EnumParam>()) {
+					auto map = p->getMap();
+					std::string selectedValue = map[p->Value()].PeekBuffer();
+
+					std::list<std::string> list = new std::list<std::string>();
+					
+					list.push_back(selectedValue);
+
+					auto iter = map.GetConstIterator();
+					while (iter.HasNext()) {
+						auto pair = iter.Next();
+						list.push_back(pair.Value().PeekBuffer());
+					}
+
+					interop::ParameterEnum param{ list, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer() };
+
+					m_bboxSender.sendData<interop::ParameterEnum>("EnumReceiver", param);
+
+					vislib::sys::Log::DefaultLog.WriteError(
+						"[View3D] sent enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param[0], param.param.size, param.name, param.modulFullName);
+
+				}
+				else if (auto* p = slot.template Param<core::param::FlexEnumParam>()) {
+					
+					std::set<std::string> set = p->getStorage();
+					std::string selectedValue = p->Value();
+
+					std::list<std::string> list = new std::list<std::string>();
+
+					list.push_back(selectedValue);
+
+					for (std::string str : set) {
+						list.push_back(str);
+					}
+
+					interop::ParameterEnum param{ list, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer() };
+
+					m_bboxSender.sendData<interop::ParameterEnum>("EnumReceiver", param);
+
+					vislib::sys::Log::DefaultLog.WriteError(
+						"[View3D] sent flex enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param[0], param.param.size, param.name, param.modulFullName);
+				}
+            }
+        }
+    });
+    //getRenderMode();
 }
 
 void megamol::vrinterop::VrInteropView3D_2::getRenderMode() {
@@ -277,6 +421,16 @@ void megamol::vrinterop::VrInteropView3D_2::getRenderMode() {
     //m_testReceiver = visbool;
     //m_boolSender.sendData<interop::VisBool>("ReceiveTest", m_testReceiver);
     //vislib::sys::Log::DefaultLog.WriteError("[View3D] Send VisBool");
+}
+
+bool megamol::vrinterop::VrInteropView3D_2::containsModul(std::list<std::string>& listOfModuls, const std::string& modname) {
+	for (std::string expectedModNames : listOfModuls)
+	{
+		if (isModul(modname, expectedModNames)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool megamol::vrinterop::VrInteropView3D_2::isModul(const std::string& modname, std::string searchedName) {
@@ -327,7 +481,11 @@ bool VrInteropView3D_2::create(void) {
     m_stereoViewReceiver.start(radr, "StereoCameraViewRelative");
     m_camProjectionReceiver.start(radr, "CameraProjection");
     m_datasetPoseReceiver.start(radr, "ModelPose");
-    m_TestReceiver.start(radr, "SendTest");
+    m_BoolReceiver.start(radr, "BoolSender");
+	m_IntReceiver.start(radr, "IntSender");
+	m_FloatReceiver.start(radr, "FloatSender");
+	m_EnumReceiver.start(radr, "EnumSender");
+	m_Vec3Receiver.start(radr, "Vec3Sender");
 
     const auto sadr = baseAdr + sendPort;
     
@@ -359,7 +517,11 @@ void VrInteropView3D_2::release(void) {
     m_stereoViewReceiver.stop();
     m_camProjectionReceiver.stop();
     m_datasetPoseReceiver.stop();
-    m_TestReceiver.stop();
+    m_BoolReceiver.stop();
+	m_IntReceiver.stop();
+	m_FloatReceiver.stop();
+	m_EnumReceiver.stop();
+	m_Vec3Receiver.stop();
     m_bboxSender.stop();
     m_boolSender.stop();
     m_vec4Sender.stop();

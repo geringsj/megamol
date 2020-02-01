@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 
+
 namespace interop {
 
 using uint = unsigned int;
@@ -203,6 +204,9 @@ template <typename T> struct Parameter {
     std::string modulFullName;
 };
 typedef Parameter<int> ParameterInt;
+typedef Parameter<float> ParameterFloat;
+typedef Parameter<std::list<std::string>> ParameterEnum;
+typedef Parameter<std::vector<float>> ParameterVec3;
 typedef Parameter<bool> ParameterBool;
 
 
@@ -212,7 +216,9 @@ typedef Parameter<bool> ParameterBool;
 make_dataGet(BoundingBoxCorners) make_dataGet(DatasetRenderConfiguration) make_dataGet(ModelPose)
     make_dataGet(StereoCameraConfiguration) make_dataGet(CameraConfiguration) make_dataGet(CameraProjection)
         make_dataGet(StereoCameraView) make_dataGet(CameraView) make_dataGet(mat4) make_dataGet(vec4)
-            make_dataGet(VisBool) make_dataGet(ParameterInt) make_dataGet(ParameterBool)
+            make_dataGet(VisBool) make_dataGet(ParameterInt) make_dataGet(ParameterFloat) make_dataGet(ParameterEnum)
+	make_dataGet(ParameterVec3)
+	make_dataGet(ParameterBool)
 #undef make_dataGet
 
 #define make_sendData(DataTypeName)                                                                                    \
@@ -222,7 +228,8 @@ make_dataGet(BoundingBoxCorners) make_dataGet(DatasetRenderConfiguration) make_d
                     make_sendData(StereoCameraConfiguration) make_sendData(CameraConfiguration)
                         make_sendData(CameraProjection) make_sendData(StereoCameraView) make_sendData(CameraView)
                             make_sendData(mat4) make_sendData(vec4) make_sendData(VisBool) make_sendData(ParameterInt)
-                                make_sendData(ParameterBool)
+                                make_sendData(ParameterBool) make_sendData(ParameterFloat) make_sendData(ParameterEnum)
+	make_sendData(ParameterVec3)
 #undef make_sendData
 
 } // namespace interop

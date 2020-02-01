@@ -102,7 +102,11 @@ private:
     interop::DataReceiver m_stereoViewReceiver;
     interop::DataReceiver m_camProjectionReceiver;
     interop::DataReceiver m_datasetPoseReceiver;
-    interop::DataReceiver m_TestReceiver;
+    interop::DataReceiver m_BoolReceiver;
+	interop::DataReceiver m_IntReceiver;
+	interop::DataReceiver m_FloatReceiver;
+	interop::DataReceiver m_EnumReceiver;
+	interop::DataReceiver m_Vec3Receiver;
     interop::DataSender m_bboxSender;
 	interop::DataSender m_boolSender;
     interop::DataSender m_vec4Sender;
@@ -123,6 +127,7 @@ private:
     void doParameterShare(const mmcRenderViewContext& context);
     void getRenderMode();
     bool isModul(const std::string& modname, std::string searchedName);
+	bool containsModul(std::list<std::string>& listOfModuls, const std::string& modname);
     bool oneTimeDataIsShared = false;
 
 	
