@@ -78,8 +78,9 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // to get the Bbox, we issue a Render(). clean it up.
 
-    //doParameterShare(context);
+    
     doBboxDataShare(context);
+	doParameterShare(context);
 
 
     bool hasModelPose = m_datasetPoseReceiver.getData<interop::ModelPose>(m_datasetPose);
@@ -104,8 +105,32 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 	
 
     if (hasReceivedBool || hasReceivedInt || hasReceivedFloat || hasReceivedEnum || hasReceivedVec3) {
-        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_boolParam.name);
-        vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param modul name: %s", m_boolParam.param ? "true" : "false");
+        //vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param: %s", m_boolParam.name);
+        //vislib::sys::Log::DefaultLog.WriteError("[View3D] receive param modul name: %s", m_boolParam.param ? "true" : "false");
+
+		std::string paramModName;
+        std::string paramName;
+
+		if (hasReceivedBool) {
+            paramModName = m_boolParam.modulFullName;
+            paramName = m_boolParam.name;
+		}
+        if (hasReceivedInt) {
+            paramModName = m_intParam.modulFullName;
+            paramName = m_intParam.name;
+        }
+        if (hasReceivedFloat) {
+            paramModName = m_floatParam.modulFullName;
+            paramName = m_floatParam.name;
+        }
+        if (hasReceivedEnum) {
+            paramModName = m_enumParam.modulFullName;
+            paramName = m_enumParam.name;
+        }
+        if (hasReceivedVec3) {
+            paramModName = m_vec3Param.modulFullName;
+            paramName = m_vec3Param.name;
+        }
 
 		this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
 
@@ -113,8 +138,8 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
             std::string slotName = slot.Name().PeekBuffer();
             std::string modName = mod.FullName().PeekBuffer();
 
-			//vislib::sys::Log::DefaultLog.WriteError(               "[View3D] slotName %s", slotName);
-            if (modName.compare(m_boolParam.modulFullName) == 0 && slotName.compare(m_boolParam.name) == 0) {
+			vislib::sys::Log::DefaultLog.WriteError(               "[View3D] slotName %s", slotName);
+            if (modName.compare(paramModName) == 0 && slotName.compare(paramName) == 0) {
 
                 if (!param.IsNull()) {
 
@@ -299,8 +324,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 
 					m_bboxSender.sendData<interop::ParameterBool>("BoolReceiver", param);
 					
-					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent bool param (%s, %s, %s) to BoolReceiver", (param.param ? "true" : "false"), param.name, param.modulFullName);
+					//<vislib::sys::Log::DefaultLog.WriteError(						"[View3D] sent bool param (%s, %s, %s) to BoolReceiver", (param.param ? "true" : "false"), param.name, param.modulFullName);
 				}
 				else if (auto* p = slot.template Param<core::param::IntParam>()) {
 
@@ -309,8 +333,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 
 					m_bboxSender.sendData<interop::ParameterInt>("IntReceiver", param);
 
-					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent int param (%d, %s, %s) to IntReceiver", param.param, param.name, param.modulFullName);
+					//vislib::sys::Log::DefaultLog.WriteError(						"[View3D] sent int param (%d, %s, %s) to IntReceiver", param.param, param.name, param.modulFullName);
 				}
 				else if (auto* p = slot.template Param<core::param::FloatParam>()) {
 
@@ -319,8 +342,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 
 					m_bboxSender.sendData<interop::ParameterFloat>("FloatReceiver", param);
 
-					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent float param (%d, %s, %s) to FloatReceiver", param.param, param.name, param.modulFullName);
+					//vislib::sys::Log::DefaultLog.WriteError(						"[View3D] sent float param (%d, %s, %s) to FloatReceiver", param.param, param.name, param.modulFullName);
 				}
 				else if (auto* p = slot.template Param<core::param::Vector3fParam>()) {
 
@@ -331,8 +353,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 
 					m_bboxSender.sendData<interop::ParameterVec3>("Vec3Receiver", param);
 
-					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent vec3 param ((%d, %d, %d), %s, %s) to Vec3Receiver", param.param[0], param.param[1], param.param[2], param.name, param.modulFullName);
+					//vislib::sys::Log::DefaultLog.WriteError(						"[View3D] sent vec3 param ((%d, %d, %d), %s, %s) to Vec3Receiver", param.param[0], param.param[1], param.param[2], param.name, param.modulFullName);
 				}
 				else if (auto* p = slot.template Param<core::param::EnumParam>()) {
 					auto map = p->getMap();
@@ -352,8 +373,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 
 					m_bboxSender.sendData<interop::ParameterEnum>("EnumReceiver", param);
 
-					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param.front(), param.param.size(), param.name, param.modulFullName);
+					//vislib::sys::Log::DefaultLog.WriteError(						"[View3D] sent enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param.front(), param.param.size(), param.name, param.modulFullName);
 
 				}
 				else if (auto* p = slot.template Param<core::param::FlexEnumParam>()) {
@@ -373,8 +393,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 
 					m_bboxSender.sendData<interop::ParameterEnum>("EnumReceiver", param);
 
-					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent flex enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param.front(), param.param.size(), param.name, param.modulFullName);
+					//vislib::sys::Log::DefaultLog.WriteError(						"[View3D] sent flex enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param.front(), param.param.size(), param.name, param.modulFullName);
 				}
             }
         }
