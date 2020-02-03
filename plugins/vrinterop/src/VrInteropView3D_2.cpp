@@ -33,6 +33,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <string>
+#include <list>
+#include <iterator>
 #include <algorithm>
 
 using namespace megamol::vrinterop;
@@ -76,7 +78,7 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // to get the Bbox, we issue a Render(). clean it up.
 
-    doParameterShare(context);
+    //doParameterShare(context);
     doBboxDataShare(context);
 
 
@@ -116,7 +118,6 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 
                 if (!param.IsNull()) {
 
-					bool test = ;
                     if (auto* p = slot.template Param<core::param::BoolParam>()) {
 
                         p->SetValue(m_boolParam.param);
@@ -144,15 +145,16 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 							"[View3D] vec3 param %s in %s changed to (%d, %d, %d)", slotName, modName, m_vec3Param.param[0], m_vec3Param.param[1], m_vec3Param.param[2]);
 					}
 					else if (auto* p = slot.template Param<core::param::EnumParam>()) {
-
-						std::string selectedValue = m_enumParam.param[0];
+										
+                        std::string selectedValue = m_enumParam.param.front();
 						
 						auto map = p->getMap();
 						auto iter = map.GetConstIterator();
 
 						while (iter.HasNext()) {
 							auto pair = iter.Next();
-							bool equals= (pair.Value().compare(selectedValue) == 0);
+                            std::string value = pair.Value().PeekBuffer();
+							bool equals = (value.compare(selectedValue) == 0);
 
 							if (equals) {
 								p->SetValue(pair.Key());
@@ -164,7 +166,7 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 					}
 					else if (auto* p = slot.template Param<core::param::FlexEnumParam>()) {
 
-						std::string selectedValue = m_enumParam.param[0];
+						std::string selectedValue = m_enumParam.param.front();
 
 						p->SetValue(selectedValue);
 						vislib::sys::Log::DefaultLog.WriteError(
@@ -298,7 +300,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 					m_bboxSender.sendData<interop::ParameterBool>("BoolReceiver", param);
 					
 					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent int param (%s, %s, %s) to BoolReceiver", (param.param ? "true" : "false"), param.name, param.modulFullName);
+						"[View3D] sent bool param (%s, %s, %s) to BoolReceiver", (param.param ? "true" : "false"), param.name, param.modulFullName);
 				}
 				else if (auto* p = slot.template Param<core::param::IntParam>()) {
 
@@ -324,7 +326,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 
 					vislib::math::Vector<float, 3> vec3 = p->Value();
 
-					std::vector<float> value = { vec3.x, vec3.y, vec3.z};
+					std::vector<float> value = {vec3[0], vec3[1], vec3[2]};
 					interop::ParameterVec3 param{ value, slot.Name().PeekBuffer(), mod.FullName().PeekBuffer() };
 
 					m_bboxSender.sendData<interop::ParameterVec3>("Vec3Receiver", param);
@@ -336,7 +338,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 					auto map = p->getMap();
 					std::string selectedValue = map[p->Value()].PeekBuffer();
 
-					std::list<std::string> list = new std::list<std::string>();
+					std::list<std::string> list = std::list<std::string>();
 					
 					list.push_back(selectedValue);
 
@@ -351,7 +353,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 					m_bboxSender.sendData<interop::ParameterEnum>("EnumReceiver", param);
 
 					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param[0], param.param.size, param.name, param.modulFullName);
+						"[View3D] sent enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param.front(), param.param.size(), param.name, param.modulFullName);
 
 				}
 				else if (auto* p = slot.template Param<core::param::FlexEnumParam>()) {
@@ -359,7 +361,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 					std::set<std::string> set = p->getStorage();
 					std::string selectedValue = p->Value();
 
-					std::list<std::string> list = new std::list<std::string>();
+					std::list<std::string> list = std::list<std::string>();
 
 					list.push_back(selectedValue);
 
@@ -372,7 +374,7 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 					m_bboxSender.sendData<interop::ParameterEnum>("EnumReceiver", param);
 
 					vislib::sys::Log::DefaultLog.WriteError(
-						"[View3D] sent flex enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param[0], param.param.size, param.name, param.modulFullName);
+						"[View3D] sent flex enum param (%s length: (%d), %s, %s) to EnumReceiver", param.param.front(), param.param.size(), param.name, param.modulFullName);
 				}
             }
         }
