@@ -179,8 +179,8 @@ bool RaycastVolumeRenderer::Render(megamol::core::view::CallRender3D_2& cr) {
     auto const maxExtents = std::max(m_volume_extents[0], std::max(m_volume_extents[1], m_volume_extents[2]));
     glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("voxelSize"), maxExtents / (maxResolution - 1.0f)); // edge length of voxel in world space 
     glUniform2fv(m_raycast_volume_compute_shdr->ParameterLocation("valRange"), 1, this->valRange.data());
-    glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("rayStepRatio"),
-        this->m_ray_step_ratio_param.Param<core::param::FloatParam>()->Value());
+    const float abs_step_ratio = glm::abs(this->m_ray_step_ratio_param.Param<core::param::FloatParam>()->Value()); 
+    glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("rayStepRatio"), abs_step_ratio);
     glUniform1f(m_raycast_volume_compute_shdr->ParameterLocation("opacityThreshold"), 1.0);
     
     // bind volume texture
