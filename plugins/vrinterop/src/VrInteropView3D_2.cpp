@@ -305,7 +305,7 @@ void megamol::vrinterop::VrInteropView3D_2::doBboxDataShare(const mmcRenderViewC
 
 void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderViewContext& context) {
 
-	std::list<std::string> modulsList{ "SphereRenderer", "RaycastVolumeRenderer", "BoundingBoxRenderer" };
+	std::list<std::string> modulsList{ "SphereRenderer", "RaycastVolumeRenderer", "BoundingBoxRenderer", "VrInteropView3D_2" };
 
     this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
 
