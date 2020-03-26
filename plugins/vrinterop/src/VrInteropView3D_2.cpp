@@ -78,10 +78,17 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // to get the Bbox, we issue a Render(). clean it up.
 
-    
-    doBboxDataShare(context);
-	doParameterShare(context);
+    //receive the list of whitelisted moduls 
+	interop::ParameterEnum m_whitelist;
+	bool hasReceivedWhitelist = m_WhitelistReceiver.getData<interop::ParameterEnum>(m_whitelist);
 
+	std::list<std::string> modulsList{""};
+	if (hasReceivedWhitelist) {
+		modulsList = m_whitelist.param;
+	}
+
+    doBboxDataShare(context);
+	doParameterShare(context, modulsList);
 
     bool hasModelPose = m_datasetPoseReceiver.getData<interop::ModelPose>(m_datasetPose);
     hasModelPose = true; // for now, we use relative dataset positioning from unity - no model matrix is sent.
@@ -132,6 +139,7 @@ void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
             paramName = m_vec3Param.name;
         }
 
+		// update the received parameter
 		this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
 
 			auto param = slot.Parameter();
@@ -303,9 +311,9 @@ void megamol::vrinterop::VrInteropView3D_2::doBboxDataShare(const mmcRenderViewC
     vislib::sys::Log::DefaultLog.WriteError("[View3D] Finished");*/
 }
 
-void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderViewContext& context) {
+void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderViewContext& context, std::list<std::string> modulsList) {
 
-	std::list<std::string> modulsList{ "SphereRenderer", "RaycastVolumeRenderer", "BoundingBoxRenderer", "VrInteropView3D_2" };
+	//std::list<std::string> modulsList{ "SphereRenderer", "RaycastVolumeRenderer", "BoundingBoxRenderer", "VrInteropView3D_2" };
 
     this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
 
@@ -507,6 +515,7 @@ bool VrInteropView3D_2::create(void) {
 	m_FloatReceiver.start(radr, "FloatSender");
 	m_EnumReceiver.start(radr, "EnumSender");
 	m_Vec3Receiver.start(radr, "Vec3Sender");
+	m_WhitelistReceiver.start(radr, "WhitelistSender");
 
     const auto sadr = baseAdr + sendPort;
     
@@ -543,6 +552,7 @@ void VrInteropView3D_2::release(void) {
 	m_FloatReceiver.stop();
 	m_EnumReceiver.stop();
 	m_Vec3Receiver.stop();
+	m_WhitelistReceiver.stop();
     m_bboxSender.stop();
     m_boolSender.stop();
     m_vec4Sender.stop();

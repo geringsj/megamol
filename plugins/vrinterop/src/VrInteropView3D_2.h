@@ -107,9 +107,11 @@ private:
 	interop::DataReceiver m_FloatReceiver;
 	interop::DataReceiver m_EnumReceiver;
 	interop::DataReceiver m_Vec3Receiver;
+	interop::DataReceiver m_WhitelistReceiver;
     interop::DataSender m_bboxSender;
 	interop::DataSender m_boolSender;
     interop::DataSender m_vec4Sender;
+	
 
     using FramebufferObject = vislib::graphics::gl::FramebufferObject;
     FramebufferObject m_stereoFBO_L, m_stereoFBO_R;
@@ -124,7 +126,7 @@ private:
     void broadcastFramebuffer(FramebufferObject& fbo, interop::TextureSender& textureSender);
     void renderFromCamera(const Camera::minimal_state_type& viewCamera, const mmcRenderViewContext& context);
     void doBboxDataShare(const mmcRenderViewContext& context);
-    void doParameterShare(const mmcRenderViewContext& context);
+    void doParameterShare(const mmcRenderViewContext& context, std::list<std::string> modulsList);
     void getRenderMode();
     bool isModul(const std::string& modname, std::string searchedName);
 	bool containsModul(std::list<std::string>& listOfModuls, const std::string& modname);
