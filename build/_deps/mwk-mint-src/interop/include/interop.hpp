@@ -5,6 +5,8 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <list>
+#include <vector>
 
 
 namespace interop {
