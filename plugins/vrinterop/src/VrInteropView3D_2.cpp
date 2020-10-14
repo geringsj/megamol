@@ -71,19 +71,25 @@ const auto resizeFBO = [&](auto& fbo, const int width, const int height) {
 };
 } // namespace
 
-/*
+// field for whitelist
+bool hasReceivedWhitelist = false;
+ /*
  * vrinterop::VrInteropView3D::Render
  */
 void VrInteropView3D_2::Render(const mmcRenderViewContext& context) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // to get the Bbox, we issue a Render(). clean it up.
 
+
     //receive the list of whitelisted moduls 
 	interop::ParameterEnum m_whitelist;
-	bool hasReceivedWhitelist = m_WhitelistReceiver.getData<interop::ParameterEnum>(m_whitelist);
+     
 
-	std::list<std::string> modulsList{""};
-	if (hasReceivedWhitelist) {
+	std::list<std::string> modulsList{};
+	if (!hasReceivedWhitelist) {
+        hasReceivedWhitelist = m_WhitelistReceiver.getData<interop::ParameterEnum>(m_whitelist);
+        if (hasReceivedWhitelist)
+			vislib::sys::Log::DefaultLog.WriteInfo("[VRINTEROP] RECEIVED WHITELIST, SIZE: %d", m_whitelist.param.size());
 		modulsList = m_whitelist.param;
 	}
 
@@ -316,7 +322,6 @@ void megamol::vrinterop::VrInteropView3D_2::doParameterShare(const mmcRenderView
 	//std::list<std::string> modulsList{ "SphereRenderer", "RaycastVolumeRenderer", "BoundingBoxRenderer", "VrInteropView3D_2" };
 
     this->GetCoreInstance()->EnumParameters([&, this](const auto& mod, auto& slot) {
-
         auto param = slot.Parameter();
         std::string slotName = slot.Name().PeekBuffer();
 		std::string modName = mod.FullName().PeekBuffer();
