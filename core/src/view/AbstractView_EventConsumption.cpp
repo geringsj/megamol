@@ -90,6 +90,7 @@ void view_poke_rendering(AbstractView& view, megamol::frontend_resources::Generi
             dummyRenderViewContext.Time = view.DefaultTime(time);
 
         view.Render(dummyRenderViewContext);
+        view.WriteRenderResultIntoGenericImage(frontend_image);
     };
     
     render();
@@ -138,6 +139,8 @@ bool view_init_rendering_state(
     }
     
     megamol::core::view::AbstractView& view = *view_ptr;
+
+    frontend_image = view.InitGenericImageWithImageType();
 
     // fake resize events for view to consume
     auto& framebuffer_events = const_cast<megamol::frontend_resources::FramebufferEvents&>(resources[3].getResource<megamol::frontend_resources::FramebufferEvents>());
