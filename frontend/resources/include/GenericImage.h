@@ -103,7 +103,6 @@ GenericImage make_image(GenericImage::ImageSize size, GenericImage::DataChannels
 
 template <>
 GenericImage make_image<GenericImageType::GLTexureHandle>(GenericImage::ImageSize size, GenericImage::DataChannels channels, const void* data);
-
 template <>
 GenericImage make_image<GenericImageType::ByteArray>(GenericImage::ImageSize size, GenericImage::DataChannels channels, const void* data);
 
@@ -112,11 +111,25 @@ GenericImage make_image(GenericImage const& source_image);
 
 template <>
 GenericImage make_image<GenericImageType::GLTexureHandle>(GenericImage const& source_image);
-
 template <>
 GenericImage make_image<GenericImageType::ByteArray>(GenericImage const& source_image);
 
 size_t channels_count(GenericImage::DataChannels channels);
+
+struct GenericImageRegistry {
+    GenericImage& make(std::string const& name);
+    bool rename(std::string const& old_name, std::string const& new_name);
+    bool remove(std::string const& name);
+    std::optional<std::reference_wrapper<GenericImage const>> find(std::string const& name) const;
+
+    bool has_updates() const { return updates; }
+    void set_updates(bool update = true) { updates = update; }
+
+    void iterate_over_entries(std::function<void(std::string /*name*/, GenericImage const& /*image*/)> const& callback) const;
+
+    void* pimpl = nullptr;
+    bool updates = false;
+};
 
 } /* end namespace frontend_resources */
 } /* end namespace megamol */
