@@ -60,6 +60,7 @@ bool GUI_Service::init(const Config& config) {
         "ProjectLoader",                         // 8 - trigger loading of new running project
         "FrameStatistics",                       // 9 - current fps and ms value
         "RuntimeConfig"                          // 10 - resource paths
+        , "GenericImageRegistry" // 11 - frontend images test
     };
 
     // init gui
@@ -265,6 +266,15 @@ void GUI_Service::preGraphRender() {
 void GUI_Service::postGraphRender() {
 
     auto gui = this->m_gui->Get();
+
+    std::vector<std::tuple<std::string, unsigned int, unsigned int, unsigned int>> textures;
+    this->m_requestedResourceReferences[11]
+        .getResource<megamol::frontend_resources::GenericImageRegistry>()
+        .iterate_over_entries([&](std::string const& image_name, megamol::frontend_resources::GenericImage const& image)
+            {
+                textures.push_back({image_name, image.gl_texture_handle, image.size().width, image.size().height});
+            });
+    gui->SetEntryPointTextures(textures);
 
     gui->PostDraw();
 }

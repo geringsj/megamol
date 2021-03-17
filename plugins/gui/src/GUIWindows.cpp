@@ -376,6 +376,8 @@ bool GUIWindows::PostDraw(void) {
     // Main Menu ---------------------------------------------------------------
     this->drawMenu();
 
+    this->ShowTextures();
+
     // Global Docking Space ---------------------------------------------------
     /// DOCKING
 #if (defined(IMGUI_HAS_VIEWPORT) && defined(IMGUI_HAS_DOCK))
@@ -2503,4 +2505,19 @@ bool megamol::gui::GUIWindows::create_not_existing_png_filepath(std::string& ino
         created_filepath = true;
     }
     return created_filepath;
+}
+
+void megamol::gui::GUIWindows::ShowTextures() {
+    auto render_image = [&](std::string const& name, unsigned int gl_texture, unsigned int width, unsigned int height) {
+        ImGui::Begin((name + " Rendering Result").c_str());
+            ImGui::Image((ImTextureID) gl_texture, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+        ImGui::End();
+    };
+
+    #define val(X) std::get<X>(image)
+
+    for (auto& image : m_textures_test)
+        render_image(val(0), val(1), val(2), val(3));
+
+    #undef val
 }

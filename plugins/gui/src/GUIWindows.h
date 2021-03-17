@@ -172,6 +172,10 @@ namespace gui {
          */
         void SetScale(float scale);
 
+        std::vector<std::tuple<std::string /*name*/,unsigned int /*GL handle*/, unsigned int /*widht*/, unsigned int /*height*/>> m_textures_test;
+        void SetEntryPointTextures(std::vector<std::tuple<std::string, unsigned int, unsigned int, unsigned int>> textures) { m_textures_test = textures; }
+        void ShowTextures();
+
         // --------------------------------------
 
         /**
