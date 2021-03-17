@@ -2509,7 +2509,7 @@ bool megamol::gui::GUIWindows::create_not_existing_png_filepath(std::string& ino
 
 void megamol::gui::GUIWindows::ShowTextures() {
     auto render_image = [&](std::string const& name, unsigned int gl_texture, unsigned int width, unsigned int height) {
-        ImGui::Begin((name + " Rendering Result").c_str());
+        ImGui::Begin((name + " Rendering Result").c_str(), nullptr, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::Image((ImTextureID) gl_texture, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
         ImGui::End();
     };
