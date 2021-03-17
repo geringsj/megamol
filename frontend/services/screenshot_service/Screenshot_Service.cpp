@@ -11,6 +11,8 @@
 #include <glad/glad.h>
 #include "GUI_Resource.h"
 
+#include "GenericImage.h"
+
 #include "mmcore/MegaMolGraph.h"
 
 // to write png files
@@ -107,6 +109,41 @@ static bool write_png_to_file(megamol::frontend_resources::ScreenshotImageData c
     return true;
 }
 
+megamol::frontend_resources::GenericImageScreenshotSource::GenericImageScreenshotSource(GenericImage const& image)
+    : m_image{& const_cast<GenericImage&>(image)}
+{}
+
+megamol::frontend_resources::ScreenshotImageData megamol::frontend_resources::GenericImageScreenshotSource::take_screenshot() const {
+    ScreenshotImageData screenshot_image;
+
+    // download GenericImage data into byte array
+    if (m_image->image_type == GenericImageType::GLTexureHandle) {
+        m_image->download_texture();
+        // GL always downloads the texture as RGBA8 into the vector
+    } else
+    if (m_image->image_type == GenericImageType::GLTexureHandle) {
+        // ok, data already present
+        // here, the vector might be filled with RGB8 too
+    } else {
+        log_error("GenericImageScreenshotSource encountered unhandled GenericImageType: " + std::to_string(static_cast<size_t>(m_image->image_type))
+                  + "\nCan not write screenshot for that image type.");
+        return screenshot_image;
+    }
+
+    screenshot_image.resize(m_image->size().width, m_image->size().height);
+
+    for (size_t i = 0, j = 0; i < m_image->image_data.size();) {
+        auto r = [&]() { return m_image->image_data[i++]; };
+        auto g = [&]() { return m_image->image_data[i++]; };
+        auto b = [&]() { return m_image->image_data[i++]; };
+        auto a = [&]() { return (m_image->channels == GenericImage::DataChannels::RGBA8) ? m_image->image_data[i++] : 255; }; // alpha either from image or 1.0
+        ScreenshotImageData::Pixel pixel = { r(), g(), b(), a() };
+        screenshot_image.image[j++] = pixel;
+    }
+
+    return screenshot_image;
+}
+
 void megamol::frontend_resources::GLScreenshotSource::set_read_buffer(ReadBuffer buffer) {
     m_read_buffer = buffer;
     GLenum read_buffer;
@@ -188,6 +225,12 @@ bool Screenshot_Service::init(const Config& config) {
         return m_toFileWriter_resource.write_screenshot(m_frontbufferSource_resource, filename);
     };
 
+    this->m_genericimageToPNG_trigger = [&](megamol::frontend_resources::GenericImage const& image, std::string const& filename) -> bool
+    {
+        log("write screenshot to " + filename);
+        return m_toFileWriter_resource.write_screenshot(megamol::frontend_resources::GenericImageScreenshotSource(image), filename);
+    };
+
     log("initialized successfully");
     return true;
 }
@@ -203,7 +246,8 @@ std::vector<FrontendResource>& Screenshot_Service::getProvidedResources() {
     {
         {"GLScreenshotSource", m_frontbufferSource_resource},
         {"ImageDataToPNGWriter", m_toFileWriter_resource},
-        {"GLFrontbufferToPNG_ScreenshotTrigger", m_frontbufferToPNG_trigger}
+        {"GLFrontbufferToPNG_ScreenshotTrigger", m_frontbufferToPNG_trigger},
+        {"GenericImageToPNG_ScreenshotTrigger", m_genericimageToPNG_trigger}
     };
 
     return m_providedResourceReferences;

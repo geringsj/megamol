@@ -66,6 +66,17 @@ public:
     ~IImageDataWriter() = default;
 };
 
+struct GenericImage;
+class GenericImageScreenshotSource : public IScreenshotSource {
+public:
+    GenericImageScreenshotSource(GenericImage const& image);
+
+    ScreenshotImageData take_screenshot() const override;
+
+private:
+    GenericImage* m_image = nullptr;
+};
+
 class GLScreenshotSource : public IScreenshotSource {
 public:
     enum ReadBuffer { FRONT, BACK, COLOR_ATT0, COLOR_ATT1, COLOR_ATT2, COLOR_ATT3};
