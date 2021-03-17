@@ -62,11 +62,15 @@ static void delete_texture(unsigned int& handle) {
 }
 
 static void download_texture_to_vector(unsigned int handle, GenericImage::ImageSize size, GenericImage::DataChannels channels, std::vector<unsigned char>& target) {
-    target.resize(size.width * size.height * channels_count(channels));
-    
+    target.resize(size.width * size.height * 4); // see below
+
     const auto [internalformat, format, type] = getInternalformatFormatType(channels);
 
-    glGetTextureSubImage(handle, 0, 0, 0, 0, size.width, size.height, 0, format, type, target.size(), target.data());
+    // returns RGBA8 and fills unused components with defaults
+    // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTextureSubImage.xhtml
+    // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetTexImage.xhtml
+    glGetTextureSubImage(handle, 0, 0, 0, 0, size.width, size.height, 1, format, type, target.size(), target.data());
+    //glGetTextureImage(handle, 0, format, type, target.size(), target.data());
 }
 
 static void upload_texture_from_vector(unsigned int& handle, GenericImage::ImageSize size, GenericImage::DataChannels channels, std::vector<unsigned char> const& source) {
