@@ -59,6 +59,10 @@ struct RuntimeConfig {
     float gui_scale = 1.0f;
     bool gui_show_entryfbos = false;
 
+    bool remote_headnode = false;
+    bool remote_rendernode = false;
+    bool remote_mpirendernode = false;
+
     std::string as_string() const {
         auto summarize = [](std::vector<std::string> const& vec) -> std::string {
             std::string result;
