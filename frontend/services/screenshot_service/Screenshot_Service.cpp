@@ -42,6 +42,8 @@ static void log_warning(std::string const& text) {
 static megamol::core::MegaMolGraph* megamolgraph_ptr = nullptr;
 static megamol::frontend_resources::GUIResource* guiresources_ptr = nullptr;
 
+static unsigned char default_alpha_value = 0;
+
 static void PNGAPI pngErrorFunc(png_structp pngPtr, png_const_charp msg) {
     log("PNG Error: " + std::string(msg));
 }
@@ -136,7 +138,7 @@ megamol::frontend_resources::ScreenshotImageData megamol::frontend_resources::Ge
         auto r = [&]() { return m_image->image_data[i++]; };
         auto g = [&]() { return m_image->image_data[i++]; };
         auto b = [&]() { return m_image->image_data[i++]; };
-        auto a = [&]() { return (m_image->channels == GenericImage::DataChannels::RGBA8) ? m_image->image_data[i++] : 255; }; // alpha either from image or 1.0
+        auto a = [&]() { return (m_image->channels == GenericImage::DataChannels::RGBA8) ? m_image->image_data[i++] : default_alpha_value; }; // alpha either from image or 1.0
         ScreenshotImageData::Pixel pixel = { r(), g(), b(), a() };
         screenshot_image.image[j++] = pixel;
     }
@@ -188,7 +190,7 @@ megamol::frontend_resources::ScreenshotImageData megamol::frontend_resources::GL
     glReadPixels(0, 0, fbWidth, fbHeight, GL_RGBA, GL_UNSIGNED_BYTE, result.image.data());
 
     for (auto& pixel : result.image)
-        pixel.a = 255;
+        pixel.a = default_alpha_value;
 
     return std::move(result);
 }
