@@ -91,6 +91,8 @@ static std::string entryfbos_option     = "entryfbos";
 static std::string remote_head_option   = "headnode";
 static std::string remote_render_option = "rendernode";
 static std::string remote_mpi_option    = "mpi";
+static std::string framebuffer_option   = "framebuffer";
+static std::string viewport_tile_option = "tile";
 static std::string help_option          = "h,help";
 
 static void files_exist(std::vector<std::string> vec, std::string const& type) {
@@ -285,6 +287,44 @@ static void window_handler(std::string const& option_name, cxxopts::ParseResult 
     }
 };
 
+static void framebuffer_handler(std::string const& option_name, cxxopts::ParseResult const& parsed_options, RuntimeConfig& config)
+{
+    auto string = parsed_options[option_name].as<std::string>();
+    // WIDTHxHEIGHT
+    std::regex geometry("(\\d+)x(\\d+)");
+    std::smatch match;
+    if (std::regex_match(string, match, geometry)) {
+        unsigned int width = std::stoul(match[1].str(), nullptr, 10);
+        unsigned int height = std::stoul(match[2].str(), nullptr, 10);
+        config.framebuffer_size = {{width, height}};
+    } else {
+        exit("framebuffer option needs to be in the following format: WIDTHxHEIGHT, e.g. 200x100");
+    }
+};
+
+static void viewport_tile_handler(std::string const& option_name, cxxopts::ParseResult const& parsed_options, RuntimeConfig& config)
+{
+    auto string = parsed_options[option_name].as<std::string>();
+    // x,y;LWIDTHxLHEIGHT;GWIDTHxGHEIGHT
+    std::regex geometry("(\\d+),(\\d+):(\\d+)x(\\d+):(\\d+)x(\\d+)");
+    std::smatch match;
+    if (std::regex_match(string, match, geometry)) {
+        using UintPair = std::pair<unsigned int, unsigned int>;
+
+        auto read_pair = [&](int index) {
+            return UintPair{std::stoul(match[index].str(), nullptr, 10), std::stoul(match[index+1].str(), nullptr, 10)};
+        };
+
+        UintPair start_pixel       = read_pair(1);
+        UintPair local_resolution  = read_pair(3);
+        UintPair global_resolution = read_pair(5);
+
+        config.viewport_tile = {start_pixel, local_resolution, global_resolution};
+    } else {
+        exit("viewport tile option needs to be in the following format: x,y:LWIDTHxLHEIGHT:GWIDTHxGHEIGHT, e.g. 0,0:200x100:400x200");
+    }
+};
+
 using OptionsListEntry = std::tuple<std::string, std::string, std::shared_ptr<cxxopts::Value>, std::function<void(std::string const&, cxxopts::ParseResult const&, megamol::frontend::RuntimeConfig&)>>;
 
 std::vector<OptionsListEntry> cli_options_list =
@@ -315,6 +355,11 @@ std::vector<OptionsListEntry> cli_options_list =
         , {remote_head_option,   "[Experimental] Start HeadNode server and run Remote_Service test ",               cxxopts::value<bool>(),                     remote_head_handler}
         , {remote_render_option, "[Experimental] Start RenderNode client and run Remote_Service test ",             cxxopts::value<bool>(),                     remote_render_handler}
         , {remote_mpi_option,    "[Experimental] Start MPI RenderNode client and run Remote_Service test ",         cxxopts::value<bool>(),                     remote_mpirender_handler}
+        , {framebuffer_option,   "Size of framebuffer, syntax: --framebuffer WIDTHxHEIGHT",                         cxxopts::value<std::string>(),              framebuffer_handler}
+        , {viewport_tile_option, "Geometry of local viewport tile, syntax: --tile x,y:LWIDTHxLHEIGHT:GWIDTHxGHEIGHT"
+                                 "where x,y is the lower left start pixel of the local tile, "
+                                 "LWIDTHxLHEIGHT is the local framebuffer resolution, "
+                                 "GWIDTHxGHEIGHT is the global framebuffer resolution",                             cxxopts::value<std::string>(),              viewport_tile_handler}
         , {help_option,          "Print help message",                                                              cxxopts::value<bool>(),                     empty_handler}
     };
 
