@@ -40,7 +40,6 @@
 #include "mmcore/utility/ResourceWrapper.h"
 #include "mmcore/utility/graphics/ScreenShotComments.h"
 #include "mmcore/versioninfo.h"
-#include "mmcore/view/AbstractView_EventConsumption.h"
 
 #include "vislib/math/Rectangle.h"
 
@@ -172,6 +171,10 @@ namespace gui {
          * Set GUI scale.
          */
         void SetScale(float scale);
+
+        std::vector<std::tuple<std::string /*name*/,unsigned int /*GL handle*/, unsigned int /*widht*/, unsigned int /*height*/>> m_textures_test;
+        void SetEntryPointTextures(std::vector<std::tuple<std::string, unsigned int, unsigned int, unsigned int>> textures) { m_textures_test = textures; }
+        void ShowTextures();
 
         // --------------------------------------
 

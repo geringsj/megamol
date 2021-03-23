@@ -36,6 +36,9 @@ public:
     struct Config {
         ImGuiAPI imgui_api = GUI_Service::ImGuiAPI::OPEN_GL;
         megamol::core::CoreInstance* core_instance = nullptr;
+        bool gui_show = true;
+        float gui_scale = 1.0f;
+        bool show_fbos_test = false;
     };
 
     std::string serviceName() const override { return "GUI_Service"; }
@@ -73,7 +76,6 @@ private:
     glm::vec2 m_framebuffer_size;
     glm::vec2 m_window_size;
     megamol::core::MegaMolGraph* m_megamol_graph;
-    megamol::frontend_resources::IOpenGL_Context const* m_opengl_context_ptr;
     std::shared_ptr<megamol::gui::GUIWrapper> m_gui = nullptr;
     std::vector<std::string> m_queuedProjectFiles;
 
@@ -86,6 +88,8 @@ private:
     void resource_provide_gui_state(const std::string& json_state);
     void resource_provide_gui_visibility(bool show);
     void resource_provide_gui_scale(float scale);
+
+    Config m_config_frontend_fbos_test;
 };
 
 } // namespace frontend

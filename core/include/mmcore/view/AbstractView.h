@@ -29,6 +29,8 @@
 #include "mmcore/BoundingBoxes_2.h"
 #include "mmcore/view/TimeControl.h"
 
+#include "GenericImage.h"
+
 namespace megamol {
 namespace core {
 namespace view {
@@ -242,6 +244,35 @@ public:
      */
     bool OnResetView(param::ParamSlot& p);
 
+    // the FBO type for the frontend image could be a class-wide static value for each View class
+    static const auto FboType = megamol::frontend_resources::GenericImageType::GLTexureHandle;
+    //static const auto FboType = megamol::frontend_resources::GenericImageType::ByteArray;
+    //
+    using GenericImage = megamol::frontend_resources::GenericImage;
+    virtual GenericImage InitGenericImageWithImageType() // override
+    {
+        // init the generic image with the image type this view outputs
+        size_t image_width = 0;
+        size_t image_height = 0;
+        GenericImage::DataChannels channels = GenericImage::DataChannels::RGB8; // or GenericImage::DataChannels::RGBA8
+
+        // the FboType encodes whether the frontend image uses a GL Texture or std::vector<byte> for image storage
+        // the frontend asks the view to tell the image type via the template and the current image size and number of color channels via the arguments
+        return megamol::frontend_resources::make_image<FboType>({image_width, image_height}, channels);
+    }
+    virtual void WriteRenderResultIntoGenericImage(GenericImage& frontend_image) // override
+    {
+        // update the generic image with new FBO size and contents
+        unsigned int fbo_color_buffer_gl_handle = 0;
+        std::vector<unsigned char> fbo_color_buffer_byte_array;
+        size_t fbo_width = 0;
+        size_t fbo_height = 0;
+
+        // the FboType encodes whether to use the GL Texture or std::vector<byte> for image update in frontend_image
+        // the FboType must match the type used in InitGenericImageWithImageType()
+        //frontend_image.set_data<FboType>(fbo_color_buffer_gl_handle, {fbo_width, fbo_height});
+        //frontend_image.set_data<FboType>(fbo_color_buffer_byte_array, {fbo_width, fbo_height});
+    }
 
 protected:
     /** Typedef alias */

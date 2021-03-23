@@ -154,6 +154,32 @@ private:
     unsigned int _viewUpdateCnt;
 
     std::shared_ptr<glowl::FramebufferObject> _fbo;
+
+    // the FBO type for the frontend image could be a class-wide static value for each View class
+    static const auto FboType = megamol::frontend_resources::GenericImageType::GLTexureHandle;
+    using GenericImage = megamol::frontend_resources::GenericImage;
+    virtual GenericImage InitGenericImageWithImageType() override
+    {
+        // init the generic image with the image type this view outputs
+        size_t image_width = 0;
+        size_t image_height = 0;
+        GenericImage::DataChannels channels = GenericImage::DataChannels::RGBA8;
+
+        // the FboType encodes whether the frontend image uses a GL Texture or std::vector<byte> for image storage
+        // the frontend asks the view to tell the image type via the template and the current image size and number of color channels via the arguments
+        return megamol::frontend_resources::make_image<FboType>({image_width, image_height}, channels);
+    }
+    virtual void WriteRenderResultIntoGenericImage(GenericImage& frontend_image) override
+    {
+        // update the generic image with new FBO size and contents
+        unsigned int fbo_color_buffer_gl_handle = _fbo->GetColourTextureID(0); // IS THIS SAFE?? IS THIS THE COLOR BUFFER??
+        size_t fbo_width = _fbo->GetWidth();
+        size_t fbo_height = _fbo->GetHeight();
+
+        // the FboType encodes whether to use the GL Texture or std::vector<byte> for image update in frontend_image
+        // the FboType must match the type used in InitGenericImageWithImageType()
+        frontend_image.set_data<FboType>(fbo_color_buffer_gl_handle, {fbo_width, fbo_height});
+    }
 };
 } /* end namespace view */
 } /* end namespace core */
