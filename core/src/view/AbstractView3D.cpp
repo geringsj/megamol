@@ -261,8 +261,14 @@ void AbstractView3D::ResetView(float window_aspect) {
         cam_intrinsics.near_plane = 0.1f;
         cam_intrinsics.far_plane = 100.0f;
         cam_intrinsics.fovy = 0.5;
-        cam_intrinsics.aspect = window_aspect;
-        cam_intrinsics.image_plane_tile = Camera::ImagePlaneTile(); // view is in control -> no tiling -> use default tile values
+        // XXX TODO FIX PROTOTYPE
+        if (_aspect > 0.0)
+            cam_intrinsics.aspect = _aspect;
+        else
+            cam_intrinsics.aspect = window_aspect;
+
+        cam_intrinsics.image_plane_tile = {{_tile.x, _tile.y}, {_tile.z, _tile.w}};
+        //Camera::ImagePlaneTile(); // view is in control -> no tiling -> use default tile values
 
         if (!this->_bboxs.IsBoundingBoxValid()) {
             this->_bboxs.SetBoundingBox(-1.0f, -1.0f, -1.0f, 1.0f, 1.0f, 1.0f);

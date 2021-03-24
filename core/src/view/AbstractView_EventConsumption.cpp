@@ -163,6 +163,7 @@ bool view_init_rendering_state(
     auto start = std::get<0>(viewport_tile);
     auto end = std::get<1>(viewport_tile);
     auto global_aspect = std::get<2>(viewport_tile);
+    view.SetTile({start.first,start.second, end.first,end.second}, global_aspect);
     frontend_image = view.InitGenericImageWithImageType();
     
     //auto& window_events = resources[2].getResource<megamol::frontend_resources::WindowEvents>();

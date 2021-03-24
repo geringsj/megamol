@@ -129,6 +129,17 @@ public:
      */
     virtual void SetCamera(Camera camera, bool isMutable = true);
 
+    // XXX TODO FIX PROTOTYPE
+    virtual Camera& GetCamera() {
+        return this->_camera;
+    }
+    glm::vec4 _tile = {0, 0, 1, 1};
+    float _aspect = 1.0;
+    void SetTile(glm::vec4 const& tile, float aspect) {
+        this->_tile = tile;
+        this->_aspect = aspect;
+    }
+
     /**
     * ...
     */
