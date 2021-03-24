@@ -97,7 +97,8 @@ private:
     // are satisfied, which means that the execute() callback for the entry point is provided the requested
     // dependencies/resources for rendering
 
-    using ViewportTile = std::pair<DoublePair, DoublePair>;
+    // XXX FIX PROTOTYPE: TILE SIZE AND GLOBAL ASPECT => PUSH GLOBAL CAMERA WITH LOCAL TILE
+    using ViewportTile = std::tuple<DoublePair, DoublePair, float /*aspect*/>;
     using EntryPointExecutionCallback =
         std::function<bool(void*, std::vector<megamol::frontend::FrontendResource> const&, GenericImage&, ViewportTile viewport_tile)>;
 
@@ -117,7 +118,8 @@ private:
     };
     std::list<GraphEntryPoint> m_entry_points;
     GraphEntryPoint::FboEventsSource m_default_fbo_events_source = GraphEntryPoint::FboEventsSource::WindowSize;
-    ViewportTile m_viewport_tile = {{0.0, 0.0}, {1.0, 1.0}};
+    // XXX TODO FIX PROTOTYPE GLOBAL ASPECT
+    ViewportTile m_viewport_tile = {{0.0, 0.0}, {1.0, 1.0}, -1.0};
 
     std::vector<megamol::frontend::FrontendResource> map_resources(std::vector<std::string> const& requests);
     void remap_individual_resources(GraphEntryPoint& entry);

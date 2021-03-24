@@ -32,7 +32,8 @@ namespace view {
     MEGAMOLCORE_API std::vector<std::string> get_gl_view_runtime_resources_requests();
 
     using DoublePair = std::pair<double, double>;
-    using ViewportTile = std::pair<DoublePair, DoublePair>;
+    // XXX TODO FIX PROTOTYPE: TILE SIZE AND ASPECT => OVERWRITE WHOLE GLOBAL CAMERA
+    using ViewportTile = std::tuple<DoublePair, DoublePair, float /*global aspect*/>;
     MEGAMOLCORE_API bool view_rendering_execution(void* module_ptr, std::vector<megamol::frontend::FrontendResource> const& resources, megamol::frontend_resources::GenericImage& fronend_image, ViewportTile viewport_tile);
     // before rendering the first frame views need to know the current framebuffer size
     // because they may have beed added to the graph after the initial framebuffer size event, we need this init callback to give them that info

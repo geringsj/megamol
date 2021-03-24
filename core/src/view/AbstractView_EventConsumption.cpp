@@ -136,13 +136,34 @@ bool view_init_rendering_state(
     
     megamol::core::view::AbstractView& view = *view_ptr;
 
-    // TODO: view.SetViewportTile(viewport_tile);
-    frontend_image = view.InitGenericImageWithImageType();
-
     // fake resize events for view to consume
     auto& framebuffer_events = const_cast<megamol::frontend_resources::FramebufferEvents&>(resources[3].getResource<megamol::frontend_resources::FramebufferEvents>());
     auto& framebuffer_size = framebuffer_events.previous_state;
     framebuffer_events.size_events.push_back(framebuffer_size);
+
+    // XXX TODO FIX PROTOTYPE
+    //auto& camera = view.GetCamera();
+    //auto cam_pose = camera.get<Camera::Pose>();
+    //if (camera.get<Camera::ProjectionType>() == Camera::ProjectionType::PERSPECTIVE) {
+    //    auto cam_intrinsics = camera.get<Camera::PerspectiveParameters>();
+    //    cam_intrinsics.image_plane_tile = {{viewport_tile.first.first,viewport_tile.first.second}, {viewport_tile.second.first,viewport_tile.second.second}};
+
+    //    cam_intrinsics.near_plane = 0.1f;
+    //    cam_intrinsics.far_plane = 100.0f;
+    //    cam_intrinsics.fovy = 0.5;
+    //    cam_intrinsics.aspect = framebuffer_size.width / static_cast<float>(framebuffer_size.height);
+
+    //    camera = Camera(cam_pose, cam_intrinsics);
+    //} else if (camera.get<Camera::ProjectionType>() == Camera::ProjectionType::ORTHOGRAPHIC) {
+    //    auto cam_intrinsics = camera.get<Camera::OrthographicParameters>();
+    //    cam_intrinsics.image_plane_tile = {{viewport_tile.first.first,viewport_tile.first.second}, {viewport_tile.second.first,viewport_tile.second.second}};
+    //    camera = Camera(cam_pose, cam_intrinsics);
+    //}
+    //view.SetCamera(camera, false);
+    auto start = std::get<0>(viewport_tile);
+    auto end = std::get<1>(viewport_tile);
+    auto global_aspect = std::get<2>(viewport_tile);
+    frontend_image = view.InitGenericImageWithImageType();
     
     //auto& window_events = resources[2].getResource<megamol::frontend_resources::WindowEvents>();
     

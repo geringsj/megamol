@@ -86,7 +86,8 @@ bool ImagePresentation_Service::init(const Config& config) {
         };
         DoublePair start = diff(start_pixel, global_size);
         DoublePair end = diff({start_pixel.first+local_size.first,start_pixel.second+local_size.second}, global_size);
-        m_viewport_tile = {start, end};
+        // XXX FIX PROTOTYPE: TILE SIZE AND GLOBAL ASPECT => PUSH GLOBAL CAMERA WITH LOCAL TILE
+        m_viewport_tile = {start, end, global_size.first / static_cast<double>(global_size.second)};
         m_config.framebuffer_size = local_size;
 
         log("using viewport tile {{"
@@ -169,7 +170,8 @@ void ImagePresentation_Service::PresentRenderedImages() {
 
 // clang-format off
 using FrontendResource = megamol::frontend::FrontendResource;
-using EntryPointExecutionCallback = std::function<bool(void*, std::vector<FrontendResource> const&, GenericImage&, /*ViewportTile*/std::pair<std::pair<double,double>, std::pair<double,double>>)>;
+// XXX FIX PROTOTYPE: TILE SIZE AND GLOBAL ASPECT => PUSH GLOBAL CAMERA WITH LOCAL TILE
+using EntryPointExecutionCallback = std::function<bool(void*, std::vector<FrontendResource> const&, GenericImage&, /*ViewportTile*/std::tuple<std::pair<double,double>, std::pair<double,double>, float>)>;
 
 using EntryPointInitFunctions =
 std::tuple<
