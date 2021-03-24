@@ -94,8 +94,8 @@ protected:
     virtual GenericImage InitGenericImageWithImageType() override
     {
         // init the generic image with the image type this view outputs
-        size_t image_width = _fbo->GetWidth();
-        size_t image_height = _fbo->GetHeight();
+        size_t image_width = 1;
+        size_t image_height = 1;
         GenericImage::DataChannels channels = GenericImage::DataChannels::RGBA8; // vislib::graphics::gl::FramebufferObject seems to use RGBA8
 
         // the FboType encodes whether the frontend image uses a GL Texture or std::vector<byte> for image storage
@@ -105,13 +105,13 @@ protected:
     virtual void WriteRenderResultIntoGenericImage(GenericImage& frontend_image) override
     {
         // update the generic image with new FBO size and contents
-        unsigned int fbo_color_buffer_gl_handle = _fbo->GetColourTextureID(0); // IS THIS SAFE?? IS THIS THE COLOR BUFFER??
-        size_t fbo_width = _fbo->GetWidth();
-        size_t fbo_height = _fbo->GetHeight();
+        //unsigned int fbo_color_buffer_gl_handle = _fbo->GetColourTextureID(0); // IS THIS SAFE?? IS THIS THE COLOR BUFFER??
+        //size_t fbo_width = _fbo->GetWidth();
+        //size_t fbo_height = _fbo->GetHeight();
 
         // the FboType encodes whether to use the GL Texture or std::vector<byte> for image update in frontend_image
         // the FboType must match the type used in InitGenericImageWithImageType()
-        frontend_image.set_data<FboType>(fbo_color_buffer_gl_handle, {fbo_width, fbo_height});
+        //frontend_image.set_data<FboType>(fbo_color_buffer_gl_handle, {fbo_width, fbo_height});
     }
 
 
