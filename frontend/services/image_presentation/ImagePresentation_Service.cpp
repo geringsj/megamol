@@ -85,7 +85,7 @@ bool ImagePresentation_Service::init(const Config& config) {
             return {point.first / static_cast<double>(size.first), point.second / static_cast<double>(size.second)};
         };
         DoublePair start = diff(start_pixel, global_size);
-        DoublePair end = diff(local_size, global_size);
+        DoublePair end = diff({start_pixel.first+local_size.first,start_pixel.second+local_size.second}, global_size);
         m_viewport_tile = {start, end};
         m_config.framebuffer_size = local_size;
 
