@@ -61,6 +61,7 @@ bool GUI_Service::init(const Config& config) {
         "FrameStatistics",                       // 9 - current fps and ms value
         "RuntimeConfig"                          // 10 - resource paths
         , "GenericImageRegistry" // 11 - frontend images test
+        , "HeadNodeRemoteControl" // 12 - remote headnode controller UI
     };
 
     // init gui
@@ -278,6 +279,10 @@ void GUI_Service::postGraphRender() {
                     textures.push_back({image_name, image.gl_texture_handle, image.size().width, image.size().height});
                 });
         gui->SetEntryPointTextures(textures);
+    }
+    if (m_config_frontend_fbos_test.show_headnode_remote_control) {
+        const auto& remote_control = this->m_requestedResourceReferences[12].getResource<std::function<void(unsigned int, std::string const&)>>();
+        gui->SetRemoteControlCallback(remote_control);
     }
 
     gui->PostDraw();
